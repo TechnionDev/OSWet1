@@ -153,8 +153,13 @@ void GetCurrDirCommand::execute() {
 
      */
     char *buf = NULL;
-    cout << getcwd(buf, 0);
-    delete buf;
+    char *res = getcwd(buf, 0);
+    if (res) {
+        cout << res;
+        delete buf;
+    } else {
+        perror("smash error: getcwd failed");
+    }
 }
 ChangeDirCommand::ChangeDirCommand(const char *cmd_line,
                                    char **plastPwd) : BuiltInCommand(cmd_line) {

@@ -131,11 +131,35 @@ ChangePrompt::ChangePrompt(const char *cmd_line,
 void ChangePrompt::execute() {
     if (num_of_parms == 0) {
         *prompt_line = DEF_PROMPT;
-        return;
-    }
-    if (num_of_parms == 1) {
+    } else if (num_of_parms == 1) {
         *prompt_line = args[1];//TODO:: NEED TO CHECK IF ITS args[1] OR args[0]
-    } else {
-        return;
     }
+}
+ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
+}
+void ShowPidCommand::execute() {
+    std::cout << "smash pid is ", getpid();
+}
+GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
+
+}
+void GetCurrDirCommand::execute() {
+    /***
+     * As an extension to the POSIX.1-2001 standard, glibc's getcwd()
+       allocates the buffer dynamically using malloc(3) if buf is NULL.
+       In this case, the allocated buffer has the length size unless
+       size is zero, when buf is allocated as big as necessary.  The
+       caller should free(3) the returned buffer.
+
+     */
+    char *buf = NULL;
+    cout << getcwd(buf, 0);
+    delete buf;
+}
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line,
+                                   char **plastPwd) : BuiltInCommand(cmd_line) {
+
+}
+void ChangeDirCommand::execute() {
+
 }

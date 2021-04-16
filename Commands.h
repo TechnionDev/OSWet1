@@ -55,20 +55,21 @@ public:
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
 public:
-    ChangeDirCommand(const char *cmd_line, char **plastPwd);
-    virtual ~ChangeDirCommand() {}
+    ChangeDirCommand(const char *cmd_line,
+                     char **plastPwd);
+    virtual ~ChangeDirCommand() = default;
     void execute() override;
 };
 class GetCurrDirCommand : public BuiltInCommand {
 public:
     GetCurrDirCommand(const char *cmd_line);
-    virtual ~GetCurrDirCommand() {}
+    virtual ~GetCurrDirCommand() = default;
     void execute() override;
 };
 class ShowPidCommand : public BuiltInCommand {
 public:
     ShowPidCommand(const char *cmd_line);
-    virtual ~ShowPidCommand() {}
+    virtual ~ShowPidCommand() = default;
     void execute() override;
 };
 class JobsList;

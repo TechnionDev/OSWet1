@@ -5,11 +5,12 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 #define DEF_PROMPT "smash> "
+#define MAX_PARAMS_IN_LINE 20
 class Command {
 public:
     int num_of_parms;
     bool is_bg;
-    char **args{};
+    char *args[MAX_PARAMS_IN_LINE];
     Command(const char *cmd_line);
     virtual ~Command();
     virtual void execute() = 0;
@@ -22,6 +23,7 @@ public:
     BuiltInCommand(const char *cmd_line);
     virtual ~BuiltInCommand() = default;
 };
+
 class ExternalCommand : public Command {
 public:
     ExternalCommand(const char *cmd_line);
@@ -46,17 +48,17 @@ public:
 };
 class ChangePrompt : public BuiltInCommand {
 private:
-    std::string *prompt_line{};
+    char *prompt_line;
 public:
-    ChangePrompt(const char *cmd_line, std::string *prompt_line);
+    ChangePrompt(const char *cmd_line, char *prompt_line);
     virtual ~ChangePrompt() = default;
     void execute() override;
 };
 class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
+private:
+    char *last_pwd;
 public:
-    ChangeDirCommand(const char *cmd_line,
-                     char **plastPwd);
+    ChangeDirCommand(const char *cmd_line, char *last_pwd);
     virtual ~ChangeDirCommand() = default;
     void execute() override;
 };
@@ -65,6 +67,7 @@ public:
     GetCurrDirCommand(const char *cmd_line);
     virtual ~GetCurrDirCommand() = default;
     void execute() override;
+    char *execute_with_return_val();
 };
 class ShowPidCommand : public BuiltInCommand {
 public:
@@ -78,7 +81,9 @@ public:
     //TODO: Add your data members public:
     virtual ~QuitCommand() {}
     void execute() override;
-    QuitCommand(const char *cmd_line, JobsList *jobs);
+    QuitCommand(const char *cmd_line_1,
+                const char *cmd_line,
+                JobsList *jobs);
 };
 class JobsList {
 public:
@@ -102,28 +107,36 @@ public:
 class JobsCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
-    JobsCommand(const char *cmd_line, JobsList *jobs);
+    JobsCommand(const char *cmd_line_1,
+                const char *cmd_line,
+                JobsList *jobs);
     virtual ~JobsCommand() {}
     void execute() override;
 };
 class KillCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
-    KillCommand(const char *cmd_line, JobsList *jobs);
+    KillCommand(const char *cmd_line_1,
+                const char *cmd_line,
+                JobsList *jobs);
     virtual ~KillCommand() {}
     void execute() override;
 };
 class ForegroundCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
-    ForegroundCommand(const char *cmd_line, JobsList *jobs);
+    ForegroundCommand(const char *cmd_line_1,
+                      const char *cmd_line,
+                      JobsList *jobs);
     virtual ~ForegroundCommand() {}
     void execute() override;
 };
 class BackgroundCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
-    BackgroundCommand(const char *cmd_line, JobsList *jobs);
+    BackgroundCommand(const char *cmd_line_1,
+                      const char *cmd_line,
+                      JobsList *jobs);
     virtual ~BackgroundCommand() {}
     void execute() override;
 };
@@ -138,8 +151,8 @@ private:
     // TODO: Add your data members
     SmallShell();
     JobsList *shell_jobs; //TODO: need to be instantiated in the constructor
-    char **last_pwd; //To be used in change_dir
-    std::string prompt_line = DEF_PROMPT;
+    char *last_pwd = nullptr; //To be used in change_dir
+    char *prompt_line;
 public:
     Command *CreateCommand(const char *cmd_line);
     SmallShell(SmallShell const &) = delete; // disable copy ctor
@@ -152,7 +165,8 @@ public:
     }
     ~SmallShell();
     void executeCommand(const char *cmd_line);
-    std::string *get_prompt() { return &prompt_line; }
+    char *getLastPwd() { return last_pwd; }
+    char *getPrompt() { return prompt_line; }
 };
 
 #endif //SMASH_COMMAND_H_

@@ -2,13 +2,14 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
-
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
-
+#define DEF_PROMPT "smash> "
 class Command {
-// TODO: Add your data members
 public:
+    int num_of_parms;
+    bool is_bg;
+    char **args{};
     Command(const char *cmd_line);
     virtual ~Command();
     virtual void execute() = 0;
@@ -19,7 +20,7 @@ public:
 class BuiltInCommand : public Command {
 public:
     BuiltInCommand(const char *cmd_line);
-    virtual ~BuiltInCommand() {}
+    virtual ~BuiltInCommand() = default;
 };
 class ExternalCommand : public Command {
 public:
@@ -43,17 +44,19 @@ public:
     //void prepare() override;
     //void cleanup() override;
 };
+class ChangePrompt : public BuiltInCommand {
+private:
+    std::string *prompt_line{};
+public:
+    ChangePrompt(const char *cmd_line, std::string *prompt_line);
+    virtual ~ChangePrompt() = default;
+    void execute() override;
+};
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
 public:
     ChangeDirCommand(const char *cmd_line, char **plastPwd);
     virtual ~ChangeDirCommand() {}
-    void execute() override;
-};
-class ChangePrompt : public BuiltInCommand {
-public:
-    ChangePrompt(const char *cmd_line);
-    virtual ~ChangePrompt() {}
     void execute() override;
 };
 class GetCurrDirCommand : public BuiltInCommand {
@@ -135,6 +138,7 @@ private:
     SmallShell();
     JobsList *shell_jobs; //TODO: need to be instantiated in the constructor
     char **last_pwd; //To be used in change_dir
+    std::string prompt_line = DEF_PROMPT;
 public:
     Command *CreateCommand(const char *cmd_line);
     SmallShell(SmallShell const &) = delete; // disable copy ctor
@@ -147,7 +151,7 @@ public:
     }
     ~SmallShell();
     void executeCommand(const char *cmd_line);
-    // TODO: add extra methods as needed
+    std::string *get_prompt() { return &prompt_line; }
 };
 
 #endif //SMASH_COMMAND_H_

@@ -8,7 +8,7 @@
 #include "Commands.h"
 
 using namespace std;
-
+#define WHITESPACE ' '
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -84,7 +84,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
     if (firstWord.compare("chprompt") == 0) {
-        return new ChangePrompt(cmd_line);
+        return new ChangePrompt(cmd_line, get_prompt());
     } else if (firstWord.compare("showpid") == 0) {
         return new ShowPidCommand(cmd_line);
     } else if (firstWord.compare("pwd") == 0) {
@@ -112,4 +112,30 @@ void SmallShell::executeCommand(const char *cmd_line) {
     cmd->execute();
     delete cmd;
     // Please note that you must fork smash process for some commands (e.g., external commands....)
+}
+
+Command::Command(const char *cmd_line) {
+    num_of_parms = _parseCommandLine(cmd_line, args);
+    is_bg = _isBackgroundComamnd(cmd_line);
+}
+Command::~Command() {
+    delete args;
+}
+
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {
+}
+ChangePrompt::ChangePrompt(const char *cmd_line,
+                           std::string *prompt_line) : BuiltInCommand(cmd_line) {
+    prompt_line = prompt_line;
+}
+void ChangePrompt::execute() {
+    if (num_of_parms == 0) {
+        *prompt_line = DEF_PROMPT;
+        return;
+    }
+    if (num_of_parms == 1) {
+        *prompt_line = args[1];//TODO:: NEED TO CHECK IF ITS args[1] OR args[0]
+    } else {
+        return;
+    }
 }

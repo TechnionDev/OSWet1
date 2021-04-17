@@ -3,6 +3,8 @@ build/
 .vscode/
 *.zip
 .DS_Store
+sandbox*
+
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,vscode,visualstudiocode,jetbrains,clion,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,vscode,visualstudiocode,jetbrains,clion,cmake

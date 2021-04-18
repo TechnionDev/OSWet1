@@ -23,10 +23,10 @@ using namespace std;
 #endif
 
 typedef enum { kCommandCtor } CommandMapKey;
-typedef Command* (*CommandCtorWrapperFuncPtr)(vector<string>);
+typedef Command* (*CommandCtorWrapperFuncPtr)(vector<string>&);
 
 template <class T>
-Command* constructorWrapper(vector<string> argv) {
+Command* constructorWrapper(vector<string> &argv) {
     return new T(argv);
 }
 

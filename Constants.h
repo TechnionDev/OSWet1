@@ -16,7 +16,8 @@
 #define PROMPT_SIGN "> "
 #define ERROR(x) (ERR_PREFIX_NOSPACE PROMPT_SIGN"\"" x "\"")
 #define WHITESPACE " "
-
+//
+#define SIG_KILL 9
 // Aliasing macros
 #define self this
 #define raise throw

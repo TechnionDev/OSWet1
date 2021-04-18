@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-
+#include <list>
 #include "Constants.h"
 
 #define EXCEPTION(name)                                  \
@@ -41,10 +41,13 @@ public:
 };
 
 class ExternalCommand : public Command {
+    std::string command_name;
 public:
     ExternalCommand(std::vector<std::string> &argv);
     virtual ~ExternalCommand() = default;
     void execute() override;
+    void setCommandName(std::string name) { command_name = name; }
+    std::string getCommandName() { return command_name; }
 };
 
 class PipeCommand : public Command {
@@ -115,22 +118,32 @@ class QuitCommand : public BuiltInCommand {
 };
 
 class JobsList {
-public:
+private:
     class JobEntry {
         // TODO: Add your data members
+    public:
+        pid_t pid;
+        ExternalCommand *command;
+        time_t time_inserted;
+        bool is_stopped;
+        int jod_id;
+        JobEntry(ExternalCommand *cmd, bool isStopped);
     };
     // TODO: Add your data members
+    static int max_jod_id;
+    std::list<JobEntry> job_list;
+    static bool compare(const JobEntry &first_entry, const JobEntry &second_entry);
 public:
     JobsList();
     ~JobsList();
-    void addJob(Command *cmd, bool isStopped = false);
+    void addJob(ExternalCommand *cmd, bool isStopped = false);
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
-    JobEntry *getJobById(int jobId);
+    JobEntry &getJobById(int jobId);
     void removeJobById(int jobId);
-    JobEntry *getLastJob(int *lastJobId);
-    JobEntry *getLastStoppedJob(int *jobId);
+    JobEntry &getLastJob(int *lastJobId);
+    JobEntry &getLastStoppedJob(int *jobId);
     // TODO: Add extra methods or modify exisitng ones as needed
 };
 
@@ -180,7 +193,7 @@ private:
     std::string prompt;
     std::string last_dir;
     SmallShell();
-
+    JobsList smash_job_list;
 public:
     Command *CreateCommand(const char *cmd_line);
     SmallShell(SmallShell const &) = delete;      // disable copy ctor

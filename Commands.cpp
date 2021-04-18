@@ -3,7 +3,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include <signal.h>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -111,7 +111,7 @@ void _removeBackgroundSign(char *cmd_line) {
 
 // TODO: Add your implementation for classes in Commands.h
 
-SmallShell::SmallShell() : prompt(SHELL_NAME) {}
+SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
 
 SmallShell::~SmallShell() {
     // TODO: add your implementation
@@ -162,10 +162,13 @@ void SmallShell::executeCommand(const char *cmd_line) {
 }
 
 void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
+
 string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
+
 std::string SmallShell::getLastDir() const {
     return self->last_dir;
 }
+
 void SmallShell::setLastDir(std::string new_dir) {
     self->last_dir = new_dir;
 }
@@ -216,6 +219,7 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
+
 std::string getPwd() {
     char pwd[PATH_MAX];
     return string(getwd(pwd));
@@ -248,6 +252,7 @@ void ChangeDirCommand::execute() {
 
 ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {
 }
+
 void ShowPidCommand::execute() {
     cout << "smash pid is " + to_string(getpid());
 }
@@ -257,4 +262,91 @@ GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {
 
 void GetCurrDirCommand::execute() {
     cout << getPwd();
+}
+
+void JobsList::addJob(ExternalCommand *cmd, bool isStopped) {
+    removeFinishedJobs();
+    max_jod_id++;
+    job_list.emplace_back(cmd, isStopped);
+
+}
+JobsList::JobsList() {
+    max_jod_id = 0;
+}
+JobsList::JobEntry &JobsList::getJobById(int jobId) {
+    for (auto &it : job_list) {
+        if (it.jod_id == jobId) {
+            return it;
+        }
+    }
+}
+void JobsList::removeJobById(int jobId) {
+    for (auto it = job_list.begin(); it != job_list.end(); it++) {
+        if (it->jod_id == jobId) {
+            if (it->jod_id == max_jod_id) {
+                max_jod_id--;
+            }
+            job_list.erase(it);
+            return;
+        }
+    }
+}
+
+JobsList::JobEntry &JobsList::getLastJob(int *lastJobId) {
+    *lastJobId = job_list.back().jod_id;
+    return job_list.back();
+}
+
+JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
+    for (auto it = job_list.rbegin(); it != job_list.rend(); ++it) {
+        if (it->is_stopped) {
+            *jobId = it->jod_id;
+            return *it;
+        }
+    }
+}
+
+void JobsList::removeFinishedJobs() {
+    for (auto it = job_list.begin(); it != job_list.end(); it++) {
+        if (waitpid(it->pid, nullptr, WNOHANG) != 0) {
+            if (it->jod_id == max_jod_id) { max_jod_id--; }
+            job_list.erase(it);
+        }
+    }
+}
+
+void JobsList::killAllJobs() {
+    for (auto it = job_list.begin(); it != job_list.end(); it++) {
+        kill(it->pid, SIG_KILL);
+        job_list.erase(it);
+    }
+    max_jod_id = 0;
+}
+
+bool JobsList::compare(const JobsList::JobEntry &first_entry, const JobsList::JobEntry &second_entry) {
+    if (first_entry.jod_id < second_entry.jod_id) {
+        return true;
+    } else { return false; }
+}
+
+JobsList::JobEntry::JobEntry(ExternalCommand *cmd, bool isStopped) {
+    command = cmd;
+    is_stopped = isStopped;
+    time(&time_inserted);
+    jod_id = max_jod_id;
+    //TODO:: decide how to get the PID of the job. save it in BuiltCommand or something else
+}
+
+void JobsList::printJobsList() {
+    removeFinishedJobs();
+    job_list.sort(compare);
+    for (auto &it : job_list) {
+        if (it.is_stopped) {
+            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
+                + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
+        } else {
+            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
+                + to_string(difftime(time(nullptr), it.time_inserted));
+        }
+    }
 }

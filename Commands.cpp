@@ -33,6 +33,7 @@ Command *constructorWrapper(vector<string> argv) {
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
     {"chprompt", &constructorWrapper<ChangePromptCommand>},
     {"showpid", &constructorWrapper<ShowPidCommand>},
+    {"pwd", &constructorWrapper<GetCurrDirCommand>},
     {"cd", &constructorWrapper<ChangeDirCommand>},
     {"cat", &constructorWrapper<CatCommand>}
     /* Add more commands here */
@@ -227,12 +228,21 @@ void ChangeDirCommand::execute() {
             cout << "smash error: cd: OLDPWD not set"; //TODO:: check with gur how to raise the exception
         }
         self->new_dir = last_pwd;
-        SmallShell::getInstance().setLastDir(getPwd());
-    }
-    if (chdir(self->new_dir.c_str()) != 0) {
-        // Failed
-        // TODO: Maybe find a more meaningful exception
-        raise CommandException(strerror(errno));
+        string curr_pwd = getPwd();
+        if (chdir(self->new_dir.c_str()) != 0) {
+            // Failed
+            // TODO: Maybe find a more meaningful exception
+            raise CommandException(strerror(errno));
+        }
+        SmallShell::getInstance().setLastDir(curr_pwd);
+    } else {
+        string last_pwd = getPwd();
+        if (chdir(self->new_dir.c_str()) != 0) {
+            // Failed
+            // TODO: Maybe find a more meaningful exception
+            raise CommandException(strerror(errno));
+        }
+        SmallShell::getInstance().setLastDir(last_pwd);
     }
 }
 

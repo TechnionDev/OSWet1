@@ -1,4 +1,4 @@
-#include "Commands.h"
+
 
 #include <string.h>
 #include <sys/wait.h>
@@ -10,6 +10,9 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include "Commands.h"
+#include "Jobs.h"
+#include "Utils.h"
 
 using namespace std;
 
@@ -35,7 +38,8 @@ static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
     {"showpid", &constructorWrapper<ShowPidCommand>},
     {"pwd", &constructorWrapper<GetCurrDirCommand>},
     {"cd", &constructorWrapper<ChangeDirCommand>},
-    {"jobs",&constructorWrapper<JobsCommand},
+    {"jobs", &constructorWrapper<JobsCommand>},
+    {"kill", &constructorWrapper<KillCommand>},
     {"cat", &constructorWrapper<CatCommand>}
     /* Add more commands here */
 };
@@ -230,14 +234,14 @@ void ChangeDirCommand::execute() {
     if (self->new_dir == "-") {
         string last_pwd = SmallShell::getInstance().getLastDir();
         if (last_pwd.empty()) {
-            cout << "smash error: cd: OLDPWD not set"; //TODO:: check with gur how to raise the exception
+            throw ItemDoesNotExist("cd: OLDPWD not set");
         }
         self->new_dir = last_pwd;
         string curr_pwd = getPwd();
         if (chdir(self->new_dir.c_str()) != 0) {
             // Failed
             // TODO: Maybe find a more meaningful exception
-            raise CommandException(strerror(errno));
+            throw CommandException(strerror(errno));
         }
         SmallShell::getInstance().setLastDir(curr_pwd);
     } else {
@@ -245,7 +249,7 @@ void ChangeDirCommand::execute() {
         if (chdir(self->new_dir.c_str()) != 0) {
             // Failed
             // TODO: Maybe find a more meaningful exception
-            raise CommandException(strerror(errno));
+            throw CommandException(strerror(errno));
         }
         SmallShell::getInstance().setLastDir(last_pwd);
     }
@@ -265,96 +269,30 @@ void GetCurrDirCommand::execute() {
     cout << getPwd();
 }
 
-void JobsList::addJob(ExternalCommand *cmd, bool isStopped) {
-    removeFinishedJobs();
-    max_jod_id++;
-    job_list.emplace_back(cmd, isStopped);
-
-}
-JobsList::JobsList() {
-    max_jod_id = 0;
-}
-JobsList::JobEntry &JobsList::getJobById(int jobId) {
-    for (auto &it : job_list) {
-        if (it.jod_id == jobId) {
-            return it;
-        }
-    }
-}
-void JobsList::removeJobById(int jobId) {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        if (it->jod_id == jobId) {
-            if (it->jod_id == max_jod_id) {
-                max_jod_id--;
-            }
-            job_list.erase(it);
-            return;
-        }
-    }
-}
-
-JobsList::JobEntry &JobsList::getLastJob(int *lastJobId) {
-    *lastJobId = job_list.back().jod_id;
-    return job_list.back();
-}
-
-JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
-    for (auto it = job_list.rbegin(); it != job_list.rend(); ++it) {
-        if (it->is_stopped) {
-            *jobId = it->jod_id;
-            return *it;
-        }
-    }
-}
-
-void JobsList::removeFinishedJobs() {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        if (waitpid(it->pid, nullptr, WNOHANG) != 0) {
-            if (it->jod_id == max_jod_id) { max_jod_id--; }
-            job_list.erase(it);
-        }
-    }
-}
-
-void JobsList::killAllJobs() {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        kill(it->pid, SIG_KILL);
-        job_list.erase(it);
-    }
-    max_jod_id = 0;
-}
-
-bool JobsList::compare(const JobsList::JobEntry &first_entry, const JobsList::JobEntry &second_entry) {
-    if (first_entry.jod_id < second_entry.jod_id) {
-        return true;
-    } else { return false; }
-}
-
-JobsList::JobEntry::JobEntry(ExternalCommand *cmd, bool isStopped) {
-    command = cmd;
-    is_stopped = isStopped;
-    time(&time_inserted);
-    jod_id = max_jod_id;
-    //TODO:: decide how to get the PID of the job. save it in BuiltCommand or something else
-}
-
-void JobsList::printJobsList() {
-    removeFinishedJobs();
-    job_list.sort(compare);
-    for (auto &it : job_list) {
-        if (it.is_stopped) {
-            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
-                + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
-        } else {
-            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
-                + to_string(difftime(time(nullptr), it.time_inserted));
-        }
-    }
-}
-
 JobsCommand::JobsCommand(vector<std::string> &argv) {
 }
 
 void JobsCommand::execute() {
     SmallShell::getInstance().getJobList().printJobsList();
+}
+
+KillCommand::KillCommand(vector<string> &argv) {
+    if (argv[0][0] != '-') {
+        throw (CommandNotFoundException("kill: invalid arguments"));
+    }
+    sig_num = int(argv[0][1]);
+    jod_id = int(argv[1][0]);
+}
+
+void KillCommand::execute() {
+    pid_t res_pid;
+    try {
+        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id).pid;
+    } catch (ItemDoesNotExist &exp) {
+        throw exp;
+    }
+    if (kill(res_pid, SIG_KILL) != 0) {
+        perror("smash error: kill failed");
+    }
+    cout << "signal number 9 was sent to pid " + to_string(sig_num);
 }

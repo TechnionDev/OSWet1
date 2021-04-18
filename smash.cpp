@@ -49,7 +49,12 @@ int main(int argc, char *argv[]) {
         //         break;
         // }
         getline(cin, cmd_line);
-        smash.executeCommand(cmd_line.c_str());
+
+        try {
+            smash.executeCommand(cmd_line.c_str());
+        } catch (CommandException &exp) {
+            cout<<exp.what();
+        }
 
     }
     return 0;

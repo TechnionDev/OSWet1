@@ -6,23 +6,7 @@
 #include <list>
 #include "Constants.h"
 
-#define EXCEPTION(name)                                  \
-    class name : public CommandException {               \
-       public:                                           \
-        name(std::string str) : CommandException(str){}; \
-    }
-
-#define COMMAND_ARGS_MAX_LENGTH (200)
-#define COMMAND_MAX_ARGS (20)
-
-class CommandException : public std::runtime_error {
-public:
-    CommandException(std::string str) : std::runtime_error(ERR_PREFIX + str) {};
-};
-
-EXCEPTION(CommandNotFoundException);
-EXCEPTION(MissingRequiredArgumentsException);
-EXCEPTION(FailedToOpenFileException);
+#include "Exceptions.h"
 
 class Command {
 public:
@@ -41,13 +25,15 @@ public:
 };
 
 class ExternalCommand : public Command {
-    std::string command_name;
-public:
-    ExternalCommand(std::vector<std::string> &argv);
-    virtual ~ExternalCommand() = default;
-    void execute() override;
-    void setCommandName(std::string name) { command_name = name; }
-    std::string getCommandName() { return command_name; }
+  std::string command_name;
+  pid_t pid;
+ public:
+  ExternalCommand(std::vector<std::string> &argv);
+  virtual ~ExternalCommand() = default;
+  void execute() override;
+  void setCommandName(std::string name) { command_name = name; }
+  std::string getCommandName() { return command_name; }
+  pid_t getPid() { return pid; }
 };
 
 class PipeCommand : public Command {
@@ -110,6 +96,7 @@ public:
 };
 
 class JobsList;
+
 class QuitCommand : public BuiltInCommand {
     // TODO: Add your data members public:
     QuitCommand(std::vector<std::string> &argv);
@@ -156,11 +143,13 @@ public:
 };
 
 class KillCommand : public BuiltInCommand {
-    // TODO: Add your data members
-public:
-    KillCommand(std::vector<std::string> &argv);
-    virtual ~KillCommand() = default;
-    void execute() override;
+  // TODO: Add your data members
+  int sig_num;
+  int jod_id;
+ public:
+  KillCommand(std::vector<std::string> &argv);
+  virtual ~KillCommand() = default;
+  void execute() override;
 };
 
 class ForegroundCommand : public BuiltInCommand {
@@ -189,29 +178,29 @@ public:
 };
 
 class SmallShell {
-private:
-    std::string prompt;
-    std::string last_dir;
-    SmallShell();
-    JobsList smash_job_list;
-public:
-    Command *CreateCommand(const char *cmd_line);
-    SmallShell(SmallShell const &) = delete;      // disable copy ctor
-    void operator=(SmallShell const &) = delete;  // disable = operator
-    static SmallShell &getInstance()             // make SmallShell singleton
-    {
-        static SmallShell instance;  // Guaranteed to be destroyed.
-        // Instantiated on first use.
-        return instance;
-    }
-    void setPrompt(std::string new_prompt);
-    std::string getPrompt() const;
-    void setLastDir(std::string new_dir);
-    std::string getLastDir() const;
-    JobsList& getJobList() {return smash_job_list;}
-    ~SmallShell();
-    void executeCommand(const char *cmd_line);
-    // TODO: add extra methods as needed
+ private:
+  std::string prompt;
+  std::string last_dir;
+  SmallShell();
+  JobsList smash_job_list;
+ public:
+  Command *CreateCommand(const char *cmd_line);
+  SmallShell(SmallShell const &) = delete;      // disable copy ctor
+  void operator=(SmallShell const &) = delete;  // disable = operator
+  static SmallShell &getInstance()             // make SmallShell singleton
+  {
+      static SmallShell instance;  // Guaranteed to be destroyed.
+      // Instantiated on first use.
+      return instance;
+  }
+  void setPrompt(std::string new_prompt);
+  std::string getPrompt() const;
+  void setLastDir(std::string new_dir);
+  std::string getLastDir() const;
+  JobsList &getJobList() { return smash_job_list; }
+  ~SmallShell();
+  void executeCommand(const char *cmd_line);
+  // TODO: add extra methods as needed
 };
 
 #endif  // SMASH_COMMAND_H_

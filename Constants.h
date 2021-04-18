@@ -20,6 +20,5 @@
 #define SIG_KILL 9
 // Aliasing macros
 #define self this
-#define raise throw
 
 #endif

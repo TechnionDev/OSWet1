@@ -127,24 +127,6 @@ SmallShell::~SmallShell() {
  * command line (cmd_line)
  */
 Command *SmallShell::CreateCommand(const char *cmd_line) {
-    // For example:
-    /*
-      string cmd_s = _trim(string(cmd_line));
-      string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-
-      if (firstWord.compare("pwd") == 0) {
-        return new GetCurrDirCommand(cmd_line);
-      }
-      else if (firstWord.compare("showpid") == 0) {
-        return new ShowPidCommand(cmd_line);
-      }
-      else if ...
-      .....
-      else {
-        return new ExternalCommand(cmd_line);
-      }
-      */
-
     string cmd_s = _trim(string(cmd_line));
     char *args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
     // Split on space
@@ -156,7 +138,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
             return commandsCtors.at(argv[0])(
                 vector<string>(argv.begin() + 1, argv.end()));
         } catch (out_of_range &exc) {
-            raise CommandNotFoundException(argv[0]);
+            // TODO: Run external command here);
         }
     }
 }
@@ -199,7 +181,7 @@ void CatCommand::execute() {
         // TODO: Add support for piping and redirection
         file.open(it);
         if (!file.is_open()) {
-            raise FailedToOpenFileException(it + ": " + strerror(errno));
+            throw FailedToOpenFileException(it + ": " + strerror(errno));
         }
 
         do {
@@ -220,7 +202,7 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
     if (argv.size() < 1) {
         ostringstream err_msg;
         err_msg << "Got " << argv.size() << " arguments, expected 1";
-        raise MissingRequiredArgumentsException(err_msg.str());
+        throw MissingRequiredArgumentsException(err_msg.str());
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
@@ -295,4 +277,13 @@ void KillCommand::execute() {
         perror("smash error: kill failed");
     }
     cout << "signal number 9 was sent to pid " + to_string(sig_num);
+}
+
+ExternalCommand::ExternalCommand(vector<string> &argv) : argv(argv) {
+    if (argv.size() == 1) {
+        throw CommandNotFoundException("No command specified");
+    } else if (not can_exec(argv[0])) {
+        throw CommandNotFoundException("");
+    }
+
 }

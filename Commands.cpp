@@ -23,26 +23,27 @@ using namespace std;
 #endif
 
 typedef enum { kCommandCtor } CommandMapKey;
-typedef Command* (*CommandCtorWrapperFuncPtr)(vector<string>);
+typedef Command *(*CommandCtorWrapperFuncPtr)(vector<string>);
 
-template <class T>
-Command* constructorWrapper(vector<string> argv) {
+template<class T>
+Command *constructorWrapper(vector<string> argv) {
     return new T(argv);
 }
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
     {"chprompt", &constructorWrapper<ChangePromptCommand>},
+    {"showpid", &constructorWrapper<ShowPidCommand>},
     {"cd", &constructorWrapper<ChangeDirCommand>},
     {"cat", &constructorWrapper<CatCommand>}
     /* Add more commands here */
 };
 
-vector<string> split(const string& str, const string& sep) {
+vector<string> split(const string &str, const string &sep) {
     vector<string> argv;
     for (size_t curr_pos = str.find(sep, 0), prev_pos = 0;
          curr_pos < str.length() || prev_pos < str.length();
          prev_pos = curr_pos + sep.length(),
-                curr_pos = str.find(sep, prev_pos)) {
+             curr_pos = str.find(sep, prev_pos)) {
         // No next delim
         if (curr_pos == string::npos) {
             curr_pos = str.length();
@@ -56,24 +57,24 @@ vector<string> split(const string& str, const string& sep) {
     return argv;
 }
 
-string _ltrim(const std::string& s) {
+string _ltrim(const std::string &s) {
     size_t start = s.find_first_not_of(WHITESPACE);
     return (start == std::string::npos) ? "" : s.substr(start);
 }
 
-string _rtrim(const std::string& s) {
+string _rtrim(const std::string &s) {
     size_t end = s.find_last_not_of(WHITESPACE);
     return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 
-string _trim(const std::string& s) { return _rtrim(_ltrim(s)); }
+string _trim(const std::string &s) { return _rtrim(_ltrim(s)); }
 
-int _parseCommandLine(const char* cmd_line, char** args) {
+int _parseCommandLine(const char *cmd_line, char **args) {
     FUNC_ENTRY()
     int i = 0;
     std::istringstream iss(_trim(string(cmd_line)).c_str());
     for (std::string s; iss >> s;) {
-        args[i] = (char*)malloc(s.length() + 1);
+        args[i] = (char *) malloc(s.length() + 1);
         memset(args[i], 0, s.length() + 1);
         strcpy(args[i], s.c_str());
         args[++i] = NULL;
@@ -83,12 +84,12 @@ int _parseCommandLine(const char* cmd_line, char** args) {
     FUNC_EXIT()
 }
 
-bool _isBackgroundComamnd(const char* cmd_line) {
+bool _isBackgroundComamnd(const char *cmd_line) {
     const string str(cmd_line);
     return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
 
-void _removeBackgroundSign(char* cmd_line) {
+void _removeBackgroundSign(char *cmd_line) {
     const string str(cmd_line);
     // find last character other than spaces
     size_t idx = str.find_last_not_of(WHITESPACE);
@@ -119,7 +120,7 @@ SmallShell::~SmallShell() {
  * Creates and returns a pointer to Command class which matches the given
  * command line (cmd_line)
  */
-Command* SmallShell::CreateCommand(const char* cmd_line) {
+Command *SmallShell::CreateCommand(const char *cmd_line) {
     // For example:
     /*
       string cmd_s = _trim(string(cmd_line));
@@ -139,7 +140,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
       */
 
     string cmd_s = _trim(string(cmd_line));
-    char* args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
+    char *args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
     // Split on space
     vector<string> argv = split(cmd_s, ARG_SEPARATOR);
     if (argv.size() == 0) {
@@ -148,21 +149,27 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
         try {
             return commandsCtors.at(argv[0])(
                 vector<string>(argv.begin() + 1, argv.end()));
-        } catch (out_of_range& exc) {
+        } catch (out_of_range &exc) {
             raise CommandNotFoundException(argv[0]);
         }
     }
 }
 
-void SmallShell::executeCommand(const char* cmd_line) {
-    Command* cmd = CreateCommand(cmd_line);
+void SmallShell::executeCommand(const char *cmd_line) {
+    Command *cmd = CreateCommand(cmd_line);
     cmd->execute();
 }
 
 void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
 string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
+std::string SmallShell::getLastDir() const {
+    return self->last_dir;
+}
+void SmallShell::setLastDir(std::string new_dir) {
+    self->last_dir = new_dir;
+}
 
-ChangePromptCommand::ChangePromptCommand(vector<string>& argv) {
+ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
         new_prompt = SHELL_NAME;
     } else {
@@ -174,7 +181,7 @@ void ChangePromptCommand::execute() {
     SmallShell::getInstance().setPrompt(self->new_prompt);
 }
 
-CatCommand::CatCommand(vector<string>& argv) : argv(argv) {}
+CatCommand::CatCommand(vector<string> &argv) : argv(argv) {}
 
 void CatCommand::execute() {
     ifstream file;
@@ -200,7 +207,7 @@ void CatCommand::execute() {
     }
 }
 
-ChangeDirCommand::ChangeDirCommand(vector<string>& argv) {
+ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
     if (argv.size() < 1) {
         ostringstream err_msg;
         err_msg << "Got " << argv.size() << " arguments, expected 1";
@@ -208,11 +215,36 @@ ChangeDirCommand::ChangeDirCommand(vector<string>& argv) {
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
+std::string getPwd() {
+    char pwd[PATH_MAX];
+    return string(getwd(pwd));
+}
 
 void ChangeDirCommand::execute() {
+    if (self->new_dir == "-") {
+        string last_pwd = SmallShell::getInstance().getLastDir();
+        if (last_pwd.empty()) {
+            cout << "smash error: cd: OLDPWD not set"; //TODO:: check with gur how to raise the exception
+        }
+        self->new_dir = last_pwd;
+        SmallShell::getInstance().setLastDir(getPwd());
+    }
     if (chdir(self->new_dir.c_str()) != 0) {
         // Failed
         // TODO: Maybe find a more meaningful exception
         raise CommandException(strerror(errno));
     }
+}
+
+ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {
+}
+void ShowPidCommand::execute() {
+    cout << "smash pid is " + to_string(getpid());
+}
+
+GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {
+}
+
+void GetCurrDirCommand::execute() {
+    cout << getPwd();
 }

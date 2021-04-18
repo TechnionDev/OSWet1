@@ -13,7 +13,7 @@ using std::flush;
 using std::getline;
 using std::string;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (signal(SIGTSTP, ctrlZHandler) == SIG_ERR) {
         perror(ERR_PREFIX "failed to set ctrl-Z handler");
     }
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     // TODO: setup sig alarm handler
 
-    SmallShell& smash = SmallShell::getInstance();
+    SmallShell &smash = SmallShell::getInstance();
     string cmd_line = "";
     int c;
     while (true) {
@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
         // }
         getline(cin, cmd_line);
         smash.executeCommand(cmd_line.c_str());
+
     }
     return 0;
 }

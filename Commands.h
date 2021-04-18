@@ -9,19 +9,19 @@
 #include "Exceptions.h"
 
 class Command {
-public:
-    Command() = default;
-    virtual ~Command() = default;
-    virtual void execute() = 0;
-    // virtual void prepare();
-    // virtual void cleanup();
-    // TODO: Add your extra methods if needed
+ public:
+  Command() = default;
+  virtual ~Command() = default;
+  virtual void execute() = 0;
+  // virtual void prepare();
+  // virtual void cleanup();
+  // TODO: Add your extra methods if needed
 };
 
 class BuiltInCommand : public Command {
-public:
-    BuiltInCommand() = default;
-    virtual ~BuiltInCommand() = default;
+ public:
+  BuiltInCommand() = default;
+  virtual ~BuiltInCommand() = default;
 };
 
 class ExternalCommand : public Command {
@@ -37,109 +37,79 @@ class ExternalCommand : public Command {
 };
 
 class PipeCommand : public Command {
-    // TODO: Add your data members
-public:
-    PipeCommand(std::vector<std::string> &argv);
-    virtual ~PipeCommand() = default;
-    void execute() override;
+  // TODO: Add your data members
+ public:
+  PipeCommand(std::vector<std::string> &argv);
+  virtual ~PipeCommand() = default;
+  void execute() override;
 };
 
 class RedirectionCommand : public Command {
-    // TODO: Add your data members
-public:
-    explicit RedirectionCommand(std::vector<std::string> &argv);
-    virtual ~RedirectionCommand() = default;
-    void execute() override;
-    // void prepare() override;
-    // void cleanup() override;
+  // TODO: Add your data members
+ public:
+  explicit RedirectionCommand(std::vector<std::string> &argv);
+  virtual ~RedirectionCommand() = default;
+  void execute() override;
+  // void prepare() override;
+  // void cleanup() override;
 };
 
 class NopCommand : public BuiltInCommand {
-public:
-    NopCommand() = default;
-    virtual ~NopCommand() = default;
-    void execute() override {}
+ public:
+  NopCommand() = default;
+  virtual ~NopCommand() = default;
+  void execute() override {}
 };
 
 class ChangePromptCommand : public BuiltInCommand {
-    std::string new_prompt;
+  std::string new_prompt;
 
-public:
-    ChangePromptCommand(std::vector<std::string> &argv);
-    virtual ~ChangePromptCommand() = default;
-    void execute() override;
+ public:
+  ChangePromptCommand(std::vector<std::string> &argv);
+  virtual ~ChangePromptCommand() = default;
+  void execute() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-    std::string new_dir;
-public:
-    // TODO: Add your data members public:
-    ChangeDirCommand(std::vector<std::string> &argv);
-    virtual ~ChangeDirCommand() = default;
-    void execute() override;
+  std::string new_dir;
+ public:
+  // TODO: Add your data members public:
+  ChangeDirCommand(std::vector<std::string> &argv);
+  virtual ~ChangeDirCommand() = default;
+  void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
-public:
-    GetCurrDirCommand(std::vector<std::string> &argv);
-    virtual ~GetCurrDirCommand() = default;
-    void execute() override;
+ public:
+  GetCurrDirCommand(std::vector<std::string> &argv);
+  virtual ~GetCurrDirCommand() = default;
+  void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
-private:
-    int pwd;
-public:
-    ShowPidCommand(std::vector<std::string> &argv);
-    virtual ~ShowPidCommand() = default;
-    void execute() override;
+ private:
+  int pwd;
+ public:
+  ShowPidCommand(std::vector<std::string> &argv);
+  virtual ~ShowPidCommand() = default;
+  void execute() override;
 };
 
 class JobsList;
 
 class QuitCommand : public BuiltInCommand {
-    // TODO: Add your data members public:
-    QuitCommand(std::vector<std::string> &argv);
-    virtual ~QuitCommand() = default;
-    void execute() override;
-};
-
-class JobsList {
-private:
-    class JobEntry {
-        // TODO: Add your data members
-    public:
-        pid_t pid;
-        ExternalCommand *command;
-        time_t time_inserted;
-        bool is_stopped;
-        int jod_id;
-        JobEntry(ExternalCommand *cmd, bool isStopped);
-    };
-    // TODO: Add your data members
-    static int max_jod_id;
-    std::list<JobEntry> job_list;
-    static bool compare(const JobEntry &first_entry, const JobEntry &second_entry);
-public:
-    JobsList();
-    ~JobsList();
-    void addJob(ExternalCommand *cmd, bool isStopped = false);
-    void printJobsList();
-    void killAllJobs();
-    void removeFinishedJobs();
-    JobEntry &getJobById(int jobId);
-    void removeJobById(int jobId);
-    JobEntry &getLastJob(int *lastJobId);
-    JobEntry &getLastStoppedJob(int *jobId);
-    // TODO: Add extra methods or modify exisitng ones as needed
+  // TODO: Add your data members public:
+  QuitCommand(std::vector<std::string> &argv);
+  virtual ~QuitCommand() = default;
+  void execute() override;
 };
 
 class JobsCommand : public BuiltInCommand {
-    // TODO: Add your data members
-public:
-    JobsCommand(std::vector<std::string> &argv);
-    virtual ~JobsCommand() = default;
-    void execute() override;
+  // TODO: Add your data members
+ public:
+  JobsCommand(std::vector<std::string> &argv);
+  virtual ~JobsCommand() = default;
+  void execute() override;
 };
 
 class KillCommand : public BuiltInCommand {
@@ -153,28 +123,28 @@ class KillCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
-    // TODO: Add your data members
-public:
-    ForegroundCommand(std::vector<std::string> &argv);
-    virtual ~ForegroundCommand() = default;
-    void execute() override;
+  // TODO: Add your data members
+ public:
+  ForegroundCommand(std::vector<std::string> &argv);
+  virtual ~ForegroundCommand() = default;
+  void execute() override;
 };
 
 class BackgroundCommand : public BuiltInCommand {
-    // TODO: Add your data members
-public:
-    BackgroundCommand(std::vector<std::string> &argv);
-    virtual ~BackgroundCommand() = default;
-    void execute() override;
+  // TODO: Add your data members
+ public:
+  BackgroundCommand(std::vector<std::string> &argv);
+  virtual ~BackgroundCommand() = default;
+  void execute() override;
 };
 
 class CatCommand : public BuiltInCommand {
-    std::vector<std::string> argv;
+  std::vector<std::string> argv;
 
-public:
-    CatCommand(std::vector<std::string> &argv);
-    virtual ~CatCommand() = default;
-    void execute() override;
+ public:
+  CatCommand(std::vector<std::string> &argv);
+  virtual ~CatCommand() = default;
+  void execute() override;
 };
 
 class SmallShell {

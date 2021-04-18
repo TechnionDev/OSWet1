@@ -292,8 +292,14 @@ void ExternalCommand::execute() {
         //     strcpy(argv[i], this->argv[i].c_str());
         // }
         // execvp(this->argv[0].c_str(), argv);
+        char *argv[3];
+        string cmd = this->getCommand();
+        argv[0] = BASH_PATH;
+        argv[1] = "-c";
+        argv[2] = new char[cmd.length()];
+        strcpy(argv[2], cmd.c_str());
 
-        execvp("/usr/bin/bash", {"-c", this->getCommand().c_str()});
+        execvp(argv[0], argv);
 
     } else {
         this->pid = pid;

@@ -35,6 +35,7 @@ static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
     {"showpid", &constructorWrapper<ShowPidCommand>},
     {"pwd", &constructorWrapper<GetCurrDirCommand>},
     {"cd", &constructorWrapper<ChangeDirCommand>},
+    {"jobs",&constructorWrapper<JobsCommand},
     {"cat", &constructorWrapper<CatCommand>}
     /* Add more commands here */
 };
@@ -349,4 +350,11 @@ void JobsList::printJobsList() {
                 + to_string(difftime(time(nullptr), it.time_inserted));
         }
     }
+}
+
+JobsCommand::JobsCommand(vector<std::string> &argv) {
+}
+
+void JobsCommand::execute() {
+    SmallShell::getInstance().getJobList().printJobsList();
 }

@@ -208,6 +208,7 @@ public:
     std::string getPrompt() const;
     void setLastDir(std::string new_dir);
     std::string getLastDir() const;
+    JobsList& getJobList() {return smash_job_list;}
     ~SmallShell();
     void executeCommand(const char *cmd_line);
     // TODO: add extra methods as needed

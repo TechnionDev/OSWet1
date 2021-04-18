@@ -1,16 +1,19 @@
 
 
+#include "Commands.h"
+
+#include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <vector>
-#include "Commands.h"
+
 #include "Jobs.h"
 #include "Utils.h"
 
@@ -26,10 +29,10 @@ using namespace std;
 #endif
 
 typedef enum { kCommandCtor } CommandMapKey;
-typedef Command* (*CommandCtorWrapperFuncPtr)(vector<string>&);
+typedef Command *(*CommandCtorWrapperFuncPtr)(vector<string> &);
 
 template <class T>
-Command* constructorWrapper(vector<string> &argv) {
+Command *constructorWrapper(vector<string> &argv) {
     return new T(argv);
 }
 
@@ -49,7 +52,7 @@ vector<string> split(const string &str, const string &sep) {
     for (size_t curr_pos = str.find(sep, 0), prev_pos = 0;
          curr_pos < str.length() || prev_pos < str.length();
          prev_pos = curr_pos + sep.length(),
-             curr_pos = str.find(sep, prev_pos)) {
+                curr_pos = str.find(sep, prev_pos)) {
         // No next delim
         if (curr_pos == string::npos) {
             curr_pos = str.length();
@@ -80,7 +83,7 @@ int _parseCommandLine(const char *cmd_line, char **args) {
     int i = 0;
     std::istringstream iss(_trim(string(cmd_line)).c_str());
     for (std::string s; iss >> s;) {
-        args[i] = (char *) malloc(s.length() + 1);
+        args[i] = (char *)malloc(s.length() + 1);
         memset(args[i], 0, s.length() + 1);
         strcpy(args[i], s.c_str());
         args[++i] = NULL;
@@ -152,13 +155,9 @@ void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
 
 string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
 
-std::string SmallShell::getLastDir() const {
-    return self->last_dir;
-}
+std::string SmallShell::getLastDir() const { return self->last_dir; }
 
-void SmallShell::setLastDir(std::string new_dir) {
-    self->last_dir = new_dir;
-}
+void SmallShell::setLastDir(std::string new_dir) { self->last_dir = new_dir; }
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
@@ -237,22 +236,17 @@ void ChangeDirCommand::execute() {
     }
 }
 
-ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {
-}
+ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
 
 void ShowPidCommand::execute() {
     cout << "smash pid is " + to_string(getpid());
 }
 
-GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {
-}
+GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
 
-void GetCurrDirCommand::execute() {
-    cout << getPwd();
-}
+void GetCurrDirCommand::execute() { cout << getPwd(); }
 
-JobsCommand::JobsCommand(vector<std::string> &argv) {
-}
+JobsCommand::JobsCommand(vector<std::string> &argv) {}
 
 void JobsCommand::execute() {
     SmallShell::getInstance().getJobList().printJobsList();
@@ -260,7 +254,7 @@ void JobsCommand::execute() {
 
 KillCommand::KillCommand(vector<string> &argv) {
     if (argv[0][0] != '-') {
-        throw (CommandNotFoundException("kill: invalid arguments"));
+        throw(CommandNotFoundException("kill: invalid arguments"));
     }
     sig_num = int(argv[0][1]);
     jod_id = int(argv[1][0]);
@@ -279,11 +273,41 @@ void KillCommand::execute() {
     cout << "signal number 9 was sent to pid " + to_string(sig_num);
 }
 
-ExternalCommand::ExternalCommand(vector<string> &argv) : argv(argv) {
+ExternalCommand::ExternalCommand(vector<string> &argv) : pid(0), argv(argv) {
     if (argv.size() == 1) {
         throw CommandNotFoundException("No command specified");
-    } else if (not can_exec(argv[0])) {
-        throw CommandNotFoundException("");
+    } else if (not can_exec(argv[0].c_str())) {
+        throw CommandNotFoundException("Command " + argv[0] + " not found");
     }
+}
 
+void ExternalCommand::execute() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Forked
+        // const int size = this->argv.size();
+        // char *argv[size];
+        // for (int i = 0; i < size; i++) {
+        //     argv[i] = new char[this->argv[i].length()];
+        //     strcpy(argv[i], this->argv[i].c_str());
+        // }
+        // execvp(this->argv[0].c_str(), argv);
+
+        execvp("/usr/bin/bash", {"-c", this->getCommand().c_str()});
+
+    } else {
+        this->pid = pid;
+    }
+}
+
+string ExternalCommand::getCommandName() const { return this->argv[0]; }
+pid_t ExternalCommand::getPid() const { return this->pid; }
+string ExternalCommand::getCommand() const {
+    const char *const delim = " ";
+
+    ostringstream imploded;
+    copy(this->argv.begin(), this->argv.end(),
+         ostream_iterator<string>(imploded, delim));
+
+    return imploded.str();
 }

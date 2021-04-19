@@ -11,13 +11,11 @@ class JobsList {
  private:
   class JobEntry {
    public:
-    pid_t pid;
-    std::string full_name;
-    std::string name;
-    time_t time_inserted;
+    std::shared_ptr<ExternalCommand> cmd;
+    time_t time_inserted{};
     bool is_stopped;
     int jod_id;
-    JobEntry(const ExternalCommand &cmd, bool isStopped, int job_id);
+    JobEntry(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped, int job_id);
   };
   // TODO: Add your data members
   int max_jod_id;
@@ -26,7 +24,7 @@ class JobsList {
  public:
   JobsList();
   ~JobsList();
-  void addJob(const ExternalCommand &cmd, bool isStopped = false);
+  void addJob(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -34,7 +32,7 @@ class JobsList {
   void removeJobById(int jobId);
   JobEntry &getLastJob(int *lastJobId);
   JobEntry &getLastStoppedJob(int *jobId);
-  int size(){return job_list.size();}
+  int size() { return job_list.size(); }
   // TODO: Add extra methods or modify exisitng ones as needed
 };
 

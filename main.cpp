@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "Commands.h"
+#include "SmallShell.h"
 #include "signals.h"
 
 using std::cin;

@@ -5,7 +5,6 @@
 #include <vector>
 #include <list>
 #include "Constants.h"
-
 #include "Exceptions.h"
 
 class Command {
@@ -32,8 +31,9 @@ class ExternalCommand : public Command {
   virtual ~ExternalCommand() = default;
   void execute() override;
   void setCommandName(std::string name) { command_name = name; }
-  std::string getCommandName() { return command_name; }
-  pid_t getPid() { return pid; }
+  std::string getCommandName() const { return command_name; }
+  pid_t getPid() const { return pid; }
+  const std::string getCommand() const {return command_name;};
 };
 
 class PipeCommand : public Command {
@@ -95,10 +95,10 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class JobsList;
-
 class QuitCommand : public BuiltInCommand {
   // TODO: Add your data members public:
+  bool kill_all;
+ public:
   QuitCommand(std::vector<std::string> &argv);
   virtual ~QuitCommand() = default;
   void execute() override;
@@ -145,32 +145,6 @@ class CatCommand : public BuiltInCommand {
   CatCommand(std::vector<std::string> &argv);
   virtual ~CatCommand() = default;
   void execute() override;
-};
-
-class SmallShell {
- private:
-  std::string prompt;
-  std::string last_dir;
-  SmallShell();
-  JobsList smash_job_list;
- public:
-  Command *CreateCommand(const char *cmd_line);
-  SmallShell(SmallShell const &) = delete;      // disable copy ctor
-  void operator=(SmallShell const &) = delete;  // disable = operator
-  static SmallShell &getInstance()             // make SmallShell singleton
-  {
-      static SmallShell instance;  // Guaranteed to be destroyed.
-      // Instantiated on first use.
-      return instance;
-  }
-  void setPrompt(std::string new_prompt);
-  std::string getPrompt() const;
-  void setLastDir(std::string new_dir);
-  std::string getLastDir() const;
-  JobsList &getJobList() { return smash_job_list; }
-  ~SmallShell();
-  void executeCommand(const char *cmd_line);
-  // TODO: add extra methods as needed
 };
 
 #endif  // SMASH_COMMAND_H_

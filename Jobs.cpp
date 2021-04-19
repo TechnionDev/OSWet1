@@ -4,13 +4,11 @@
 #include <iostream>
 #include "Exceptions.h"
 #include <signal.h>
-
 using namespace std;
-void JobsList::addJob(ExternalCommand *cmd, bool isStopped) {
+void JobsList::addJob(const ExternalCommand &cmd, bool isStopped) {
     removeFinishedJobs();
     max_jod_id++;
-    job_list.emplace_back(cmd, isStopped);
-
+    job_list.emplace_back(cmd, isStopped, max_jod_id);
 }
 JobsList::JobsList() {
     max_jod_id = 0;
@@ -65,6 +63,7 @@ void JobsList::removeFinishedJobs() {
 void JobsList::killAllJobs() {
     for (auto it = job_list.begin(); it != job_list.end(); it++) {
         kill(it->pid, SIG_KILL);
+        cout<<to_string(it->pid) +": "+ it->full_name;
         job_list.erase(it);
     }
     max_jod_id = 0;
@@ -76,13 +75,13 @@ bool JobsList::compare(const JobsList::JobEntry &first_entry, const JobsList::Jo
     } else { return false; }
 }
 
-JobsList::JobEntry::JobEntry(ExternalCommand *cmd, bool isStopped) {
-    command = cmd;
-    is_stopped = isStopped;
+JobsList::JobEntry::JobEntry(const ExternalCommand &cmd, bool isStopped, int job_id) :
+    name(cmd.getCommandName()),
+    is_stopped(isStopped),
+    jod_id(job_id) {
     time(&time_inserted);
-    jod_id = max_jod_id;
-//    pid = cmd.
-    //TODO:: decide how to get the PID of the job. save it in BuiltCommand or something else
+    pid = cmd.getPid();
+    full_name =cmd.getCommand();
 }
 
 void JobsList::printJobsList() {
@@ -90,11 +89,14 @@ void JobsList::printJobsList() {
     job_list.sort(compare);
     for (auto &it : job_list) {
         if (it.is_stopped) {
-            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
+            cout << "[" + to_string(it.jod_id) + "] " + it.name + " : " + to_string(it.pid) + " "
                 + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
         } else {
-            cout << "[" + to_string(it.jod_id) + "] " + it.command->getCommandName() + " : " + to_string(it.pid) + " "
+            cout << "[" + to_string(it.jod_id) + "] " + it.name + " : " + to_string(it.pid) + " "
                 + to_string(difftime(time(nullptr), it.time_inserted));
         }
     }
+}
+JobsList::~JobsList() {
+
 }

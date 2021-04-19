@@ -1,5 +1,3 @@
-
-
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -11,154 +9,14 @@
 #include <sstream>
 #include <vector>
 #include "Commands.h"
+#include "SmallShell.h"
 #include "Jobs.h"
 #include "Utils.h"
 
 using namespace std;
 
-#if 0
-#define FUNC_ENTRY() cout << __PRETTY_FUNCTION__ << " --> " << endl;
-
-#define FUNC_EXIT() cout << __PRETTY_FUNCTION__ << " <-- " << endl;
-#else
-#define FUNC_ENTRY()
-#define FUNC_EXIT()
-#endif
-
-typedef enum { kCommandCtor } CommandMapKey;
-typedef Command *(*CommandCtorWrapperFuncPtr)(vector<string>);
-
-template<class T>
-Command *constructorWrapper(vector<string> argv) {
-    return new T(argv);
-}
-
-static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
-    {"chprompt", &constructorWrapper<ChangePromptCommand>},
-    {"showpid", &constructorWrapper<ShowPidCommand>},
-    {"pwd", &constructorWrapper<GetCurrDirCommand>},
-    {"cd", &constructorWrapper<ChangeDirCommand>},
-    {"jobs", &constructorWrapper<JobsCommand>},
-    {"kill", &constructorWrapper<KillCommand>},
-    {"cat", &constructorWrapper<CatCommand>}
-    /* Add more commands here */
-};
-
-vector<string> split(const string &str, const string &sep) {
-    vector<string> argv;
-    for (size_t curr_pos = str.find(sep, 0), prev_pos = 0;
-         curr_pos < str.length() || prev_pos < str.length();
-         prev_pos = curr_pos + sep.length(),
-             curr_pos = str.find(sep, prev_pos)) {
-        // No next delim
-        if (curr_pos == string::npos) {
-            curr_pos = str.length();
-        }
-        // Retreive current arg
-        string arg = str.substr(prev_pos, curr_pos - prev_pos);
-        if (!arg.empty()) {
-            argv.push_back(arg);
-        }
-    }
-    return argv;
-}
-
-string _ltrim(const std::string &s) {
-    size_t start = s.find_first_not_of(WHITESPACE);
-    return (start == std::string::npos) ? "" : s.substr(start);
-}
-
-string _rtrim(const std::string &s) {
-    size_t end = s.find_last_not_of(WHITESPACE);
-    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
-}
-
-string _trim(const std::string &s) { return _rtrim(_ltrim(s)); }
-
-int _parseCommandLine(const char *cmd_line, char **args) {
-    FUNC_ENTRY()
-    int i = 0;
-    std::istringstream iss(_trim(string(cmd_line)).c_str());
-    for (std::string s; iss >> s;) {
-        args[i] = (char *) malloc(s.length() + 1);
-        memset(args[i], 0, s.length() + 1);
-        strcpy(args[i], s.c_str());
-        args[++i] = NULL;
-    }
-    return i;
-
-    FUNC_EXIT()
-}
-
-bool _isBackgroundComamnd(const char *cmd_line) {
-    const string str(cmd_line);
-    return str[str.find_last_not_of(WHITESPACE)] == '&';
-}
-
-void _removeBackgroundSign(char *cmd_line) {
-    const string str(cmd_line);
-    // find last character other than spaces
-    size_t idx = str.find_last_not_of(WHITESPACE);
-    // if all characters are spaces then return
-    if (idx == string::npos) {
-        return;
-    }
-    // if the command line does not end with & then return
-    if (cmd_line[idx] != '&') {
-        return;
-    }
-    // replace the & (background sign) with space and then remove all tailing
-    // spaces.
-    cmd_line[idx] = ' ';
-    // truncate the command line string up to the last non-space character
-    cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
-}
-
 // TODO: Add your implementation for classes in Commands.h
 
-SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
-
-SmallShell::~SmallShell() {
-    // TODO: add your implementation
-}
-
-/**
- * Creates and returns a pointer to Command class which matches the given
- * command line (cmd_line)
- */
-Command *SmallShell::CreateCommand(const char *cmd_line) {
-    string cmd_s = _trim(string(cmd_line));
-    char *args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
-    // Split on space
-    vector<string> argv = split(cmd_s, ARG_SEPARATOR);
-    if (argv.size() == 0) {
-        return new NopCommand();
-    } else {
-        try {
-            return commandsCtors.at(argv[0])(
-                vector<string>(argv.begin() + 1, argv.end()));
-        } catch (out_of_range &exc) {
-            // TODO: Run external command here);
-        }
-    }
-}
-
-void SmallShell::executeCommand(const char *cmd_line) {
-    Command *cmd = CreateCommand(cmd_line);
-    cmd->execute();
-}
-
-void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
-
-string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
-
-std::string SmallShell::getLastDir() const {
-    return self->last_dir;
-}
-
-void SmallShell::setLastDir(std::string new_dir) {
-    self->last_dir = new_dir;
-}
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
@@ -278,12 +136,27 @@ void KillCommand::execute() {
     }
     cout << "signal number 9 was sent to pid " + to_string(sig_num);
 }
+//
+//ExternalCommand::ExternalCommand(vector<string> &argv) : argv(argv) {
+//    if (argv.size() == 1) {
+//        throw CommandNotFoundException("No command specified");
+//    } else if (not can_exec(argv[0])) {
+//        throw CommandNotFoundException("");
+//    }
+//
+//}
 
-ExternalCommand::ExternalCommand(vector<string> &argv) : argv(argv) {
-    if (argv.size() == 1) {
-        throw CommandNotFoundException("No command specified");
-    } else if (not can_exec(argv[0])) {
-        throw CommandNotFoundException("");
+QuitCommand::QuitCommand(vector<std::string> &argv) {
+    if (argv[0] == "kill") {
+        kill_all = true;
     }
+}
 
+void QuitCommand::execute() {
+    if (kill_all) {
+        int size = SmallShell::getInstance().getJobList().size();
+        cout << "smash: sending SIGKILL signal to " + to_string(size) + " jobs:";
+        SmallShell::getInstance().getJobList().killAllJobs();
+    }
+    exit(0);
 }

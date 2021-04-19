@@ -1,7 +1,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -95,22 +95,17 @@ void ChangeDirCommand::execute() {
     }
 }
 
-ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {
-}
+ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
 
 void ShowPidCommand::execute() {
     cout << "smash pid is " + to_string(getpid());
 }
 
-GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {
-}
+GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
 
-void GetCurrDirCommand::execute() {
-    cout << getPwd();
-}
+void GetCurrDirCommand::execute() { cout << getPwd(); }
 
-JobsCommand::JobsCommand(vector<std::string> &argv) {
-}
+JobsCommand::JobsCommand(vector<std::string> &argv) {}
 
 void JobsCommand::execute() {
     SmallShell::getInstance().getJobList().printJobsList();
@@ -118,7 +113,7 @@ void JobsCommand::execute() {
 
 KillCommand::KillCommand(vector<string> &argv) {
     if (argv[0][0] != '-') {
-        throw (CommandNotFoundException("kill: invalid arguments"));
+        throw(CommandNotFoundException("kill: invalid arguments"));
     }
     sig_num = int(argv[0][1]);
     jod_id = int(argv[1][0]);
@@ -136,15 +131,6 @@ void KillCommand::execute() {
     }
     cout << "signal number 9 was sent to pid " + to_string(sig_num);
 }
-//
-//ExternalCommand::ExternalCommand(vector<string> &argv) : argv(argv) {
-//    if (argv.size() == 1) {
-//        throw CommandNotFoundException("No command specified");
-//    } else if (not can_exec(argv[0])) {
-//        throw CommandNotFoundException("");
-//    }
-//
-//}
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
     if (argv[0] == "kill") {
@@ -159,4 +145,49 @@ void QuitCommand::execute() {
         SmallShell::getInstance().getJobList().killAllJobs();
     }
     exit(0);
+}
+
+ExternalCommand::ExternalCommand(vector<string> &argv) : pid(0), argv(argv) {
+    if (argv.size() == 1) {
+        throw CommandNotFoundException("No command specified");
+    } else if (not can_exec(argv[0].c_str())) {
+        throw CommandNotFoundException("Command " + argv[0] + " not found");
+    }
+}
+
+void ExternalCommand::execute() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Forked
+        // const int size = this->argv.size();
+        // char *argv[size];
+        // for (int i = 0; i < size; i++) {
+        //     argv[i] = new char[this->argv[i].length()];
+        //     strcpy(argv[i], this->argv[i].c_str());
+        // }
+        // execvp(this->argv[0].c_str(), argv);
+        char *argv[3];
+        string cmd = this->getCommand();
+        argv[0] = BASH_PATH;
+        argv[1] = "-c";
+        argv[2] = new char[cmd.length()];
+        strcpy(argv[2], cmd.c_str());
+
+        execvp(argv[0], argv);
+
+    } else {
+        this->pid = pid;
+    }
+}
+
+string ExternalCommand::getCommandName() const { return this->argv[0]; }
+pid_t ExternalCommand::getPid() const { return this->pid; }
+string ExternalCommand::getCommand() const {
+    const char *const delim = " ";
+
+    ostringstream imploded;
+    copy(this->argv.begin(), this->argv.end(),
+         ostream_iterator<string>(imploded, delim));
+
+    return imploded.str();
 }

@@ -5,7 +5,7 @@
 #include "Exceptions.h"
 #include <signal.h>
 using namespace std;
-void JobsList::addJob(const ExternalCommand &cmd, bool isStopped) {
+void JobsList::addJob(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped) {
     removeFinishedJobs();
     max_jod_id++;
     job_list.emplace_back(cmd, isStopped, max_jod_id);
@@ -53,7 +53,7 @@ JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        if (waitpid(it->pid, nullptr, WNOHANG) != 0) {
+        if (waitpid(it->cmd->getPid(), nullptr, WNOHANG) != 0) {
             if (it->jod_id == max_jod_id) { max_jod_id--; }
             job_list.erase(it);
         }
@@ -62,8 +62,8 @@ void JobsList::removeFinishedJobs() {
 
 void JobsList::killAllJobs() {
     for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        kill(it->pid, SIG_KILL);
-        cout<<to_string(it->pid) +": "+ it->full_name;
+        kill(it->cmd->getPid(), SIG_KILL);
+        cout << to_string(it->cmd->getPid()) + ": " + it->cmd->getCommand();
         job_list.erase(it);
     }
     max_jod_id = 0;
@@ -75,13 +75,11 @@ bool JobsList::compare(const JobsList::JobEntry &first_entry, const JobsList::Jo
     } else { return false; }
 }
 
-JobsList::JobEntry::JobEntry(const ExternalCommand &cmd, bool isStopped, int job_id) :
-    name(cmd.getCommandName()),
+JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped, int job_id) :
     is_stopped(isStopped),
     jod_id(job_id) {
     time(&time_inserted);
-    pid = cmd.getPid();
-    full_name =cmd.getCommand();
+    this->cmd = cmd;
 }
 
 void JobsList::printJobsList() {
@@ -89,11 +87,11 @@ void JobsList::printJobsList() {
     job_list.sort(compare);
     for (auto &it : job_list) {
         if (it.is_stopped) {
-            cout << "[" + to_string(it.jod_id) + "] " + it.name + " : " + to_string(it.pid) + " "
-                + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
+            cout << "[" + to_string(it.jod_id) + "] " + it.cmd->getCommandName() + " : " + to_string(it.cmd->getPid())
+                + " " + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
         } else {
-            cout << "[" + to_string(it.jod_id) + "] " + it.name + " : " + to_string(it.pid) + " "
-                + to_string(difftime(time(nullptr), it.time_inserted));
+            cout << "[" + to_string(it.jod_id) + "] " + it.cmd->getCommandName() + " : " + to_string(it.cmd->getPid())
+                + " " + to_string(difftime(time(nullptr), it.time_inserted));
         }
     }
 }

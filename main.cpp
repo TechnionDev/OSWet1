@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
     string cmd_line = "";
     int c;
     while (true) {
+        smash.getJobList().removeFinishedJobs();
         cout << smash.getPrompt() << flush;
         // switch ((c = getch())) {
         //     case KEY_UP:

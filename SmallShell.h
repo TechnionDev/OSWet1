@@ -4,11 +4,12 @@
 #include "Jobs.h"
 class SmallShell {
    private:
+  pid_t curr_pid;
     std::string prompt;
     std::string last_dir;
     SmallShell();
     JobsList smash_job_list;
-
+  std::shared_ptr<ExternalCommand> cmd = nullptr;
    public:
     std::shared_ptr<Command> CreateCommand(std::string cmd_line);
     SmallShell(SmallShell const &) = delete;      // disable copy ctor
@@ -26,7 +27,7 @@ class SmallShell {
     JobsList &getJobList() { return smash_job_list; }
     ~SmallShell();
     void executeCommand(std::string cmd_line);
-
+  const std::shared_ptr<ExternalCommand> &getExternalCommand() const { return cmd; }
     // TODO: add extra methods as needed
 };
 

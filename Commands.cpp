@@ -115,7 +115,7 @@ void JobsCommand::execute() {
 
 KillCommand::KillCommand(vector<string> &argv) {
     if (argv[0][0] != '-') {
-        throw(CommandNotFoundException("kill: invalid arguments"));
+        throw (CommandNotFoundException("kill: invalid arguments"));
     }
     sig_num = int(argv[0][1]);
     jod_id = int(argv[1][0]);
@@ -124,7 +124,7 @@ KillCommand::KillCommand(vector<string> &argv) {
 void KillCommand::execute() {
     pid_t res_pid;
     try {
-        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id).pid;
+        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id).cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
         throw exp;
     }

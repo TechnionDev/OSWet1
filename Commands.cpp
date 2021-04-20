@@ -58,6 +58,11 @@ void CatCommand::execute() {
     }
 }
 
+std::string getPwd() {
+    char pwd[PATH_MAX];
+    return string(getwd(pwd));
+}
+
 ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
     if (argv.size() < 1) {
         ostringstream err_msg;
@@ -65,11 +70,6 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
         throw MissingRequiredArgumentsException(err_msg.str());
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
-}
-
-std::string getPwd() {
-    char pwd[PATH_MAX];
-    return string(getwd(pwd)) + "\n";
 }
 
 void ChangeDirCommand::execute() {
@@ -105,7 +105,7 @@ void ShowPidCommand::execute() {
 
 GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
 
-void GetCurrDirCommand::execute() { cout << getPwd(); }
+void GetCurrDirCommand::execute() { cout << getPwd() << endl; }
 
 JobsCommand::JobsCommand(vector<std::string> &argv) {}
 
@@ -128,14 +128,18 @@ KillCommand::KillCommand(vector<string> &argv) {
 void KillCommand::execute() {
     pid_t res_pid;
     try {
-        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id).cmd->getPid();
+        res_pid = SmallShell::getInstance()
+                      .getJobList()
+                      .getJobById(jod_id)
+                      .cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
         throw exp;
     }
     if (kill(res_pid, sig_num) != 0) {
         perror("smash error: kill failed");
     }
-    cout << "signal number " + to_string(sig_num) + " was sent to pid " + to_string(res_pid);
+    cout << "signal number " + to_string(sig_num) + " was sent to pid " +
+                to_string(res_pid);
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -191,13 +195,13 @@ void ExternalCommand::execute() {
     }
 }
 
-string ExternalCommand::getCommandName() const { return split(this->command)[0]; }
+string ExternalCommand::getCommandName() const {
+    return split(this->command)[0];
+}
 
 pid_t ExternalCommand::getPid() const { return this->pid; }
 
-string ExternalCommand::getCommand() const {
-    return this->command;
-}
+string ExternalCommand::getCommand() const { return this->command; }
 
 ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
     try {
@@ -217,10 +221,19 @@ void ForegroundCommand::execute() {
         pid_t job_pid;
         string job_command;
         if (job_id != 0) {
-            job_command = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getCommand();
-            job_pid = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getPid();
+            job_command = SmallShell::getInstance()
+                              .getJobList()
+                              .getJobById(job_id)
+                              .cmd->getCommand();
+            job_pid = SmallShell::getInstance()
+                          .getJobList()
+                          .getJobById(job_id)
+                          .cmd->getPid();
         } else {
-            job_command = SmallShell::getInstance().getJobList().getLastJob(&job_pid).cmd->getCommand();
+            job_command = SmallShell::getInstance()
+                              .getJobList()
+                              .getLastJob(&job_pid)
+                              .cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid);
         if (kill(job_pid, SIGCONT) != 0) {
@@ -235,7 +248,9 @@ void ForegroundCommand::execute() {
     } catch (CommandException &exp) {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
-        throw ItemDoesNotExist(" fg:" + error_message.substr(prompt.length(), error_message.length()));
+        throw ItemDoesNotExist(
+            " fg:" +
+            error_message.substr(prompt.length(), error_message.length()));
     }
 }
 
@@ -260,12 +275,14 @@ void BackgroundCommand::execute() {
         if (job_id != 0) {
             if (!job_list.getJobById(job_id).is_stopped) {
                 throw AlreadyRunningInBackGround(
-                    "job-id " + to_string(job_id) + " is already running in the background");
+                    "job-id " + to_string(job_id) +
+                    " is already running in the background");
             }
             job_command = job_list.getJobById(job_id).cmd->getCommand();
             job_pid = job_list.getJobById(job_id).cmd->getPid();
         } else {
-            job_command = job_list.getLastStoppedJob(&job_pid).cmd->getCommand();
+            job_command =
+                job_list.getLastStoppedJob(&job_pid).cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid);
         job_list.getJobById(job_id).is_stopped = false;
@@ -277,6 +294,8 @@ void BackgroundCommand::execute() {
     } catch (CommandException &exp) {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
-        throw ItemDoesNotExist(" bg:" + error_message.substr(prompt.length(), error_message.length()));
+        throw ItemDoesNotExist(
+            " bg:" +
+            error_message.substr(prompt.length(), error_message.length()));
     }
 }

@@ -30,7 +30,7 @@ class JobsList {
   void removeFinishedJobs();
   JobEntry &getJobById(int jobId);
   void removeJobById(int jobId);
-  JobEntry &getLastJob(int *lastJobId);
+  JobEntry &getLastJob(int *lastJobPid);
   JobEntry &getLastStoppedJob(int *jobId);
   int size() { return job_list.size(); }
   // TODO: Add extra methods or modify exisitng ones as needed

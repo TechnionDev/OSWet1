@@ -171,6 +171,7 @@ void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) {
         // Forked - setup arguments
+        setpgrp();
         char **argv = new char *[4];
         argv[0] = strdup(BASH_PATH);
         argv[1] = strdup("-c");

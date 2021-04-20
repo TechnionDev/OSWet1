@@ -1,3 +1,5 @@
+#include "Commands.h"
+
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -8,15 +10,15 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include "Commands.h"
-#include "SmallShell.h"
+
+#include "Exceptions.h"
 #include "Jobs.h"
+#include "SmallShell.h"
 #include "Utils.h"
 
 using namespace std;
 
 // TODO: Add your implementation for classes in Commands.h
-
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
@@ -67,7 +69,7 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
 
 std::string getPwd() {
     char pwd[PATH_MAX];
-    return string(getwd(pwd));
+    return string(getwd(pwd)) + "\n";
 }
 
 void ChangeDirCommand::execute() {
@@ -98,7 +100,7 @@ void ChangeDirCommand::execute() {
 ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
 
 void ShowPidCommand::execute() {
-    cout << "smash pid is " + to_string(getpid());
+    cout << "smash pid is " + to_string(getpid()) << endl;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
@@ -133,61 +135,60 @@ void KillCommand::execute() {
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
-    if (argv[0] == "kill") {
-        kill_all = true;
+    if (argv.size() > 0 and argv[0] == "kill") {
+        this->kill_all = true;
     }
 }
 
 void QuitCommand::execute() {
-    if (kill_all) {
+    if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
-        cout << "smash: sending SIGKILL signal to " + to_string(size) + " jobs:";
+        cout << "smash: sending SIGKILL signal to " + to_string(size) +
+                    " jobs:";
         SmallShell::getInstance().getJobList().killAllJobs();
     }
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
-ExternalCommand::ExternalCommand(vector<string> &argv) : pid(0), argv(argv) {
-    if (argv.size() == 1) {
+ExternalCommand::ExternalCommand(string command, bool isBackground)
+    : pid(0), command(command), isBackground(isBackground) {
+    if (command == "") {
         throw CommandNotFoundException("No command specified");
-    } else if (not can_exec(argv[0].c_str())) {
+    } /* else if (not can_exec(argv[0].c_str())) {
         throw CommandNotFoundException("Command " + argv[0] + " not found");
-    }
+    } */
 }
 
 void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) {
-        // Forked
-        // const int size = this->argv.size();
-        // char *argv[size];
-        // for (int i = 0; i < size; i++) {
-        //     argv[i] = new char[this->argv[i].length()];
-        //     strcpy(argv[i], this->argv[i].c_str());
-        // }
-        // execvp(this->argv[0].c_str(), argv);
-        char *argv[3];
-        string cmd = this->getCommand();
-        argv[0] = BASH_PATH;
-        argv[1] = "-c";
-        argv[2] = new char[cmd.length()];
-        strcpy(argv[2], cmd.c_str());
+        // Forked - setup arguments
+        char **argv = new char *[4];
+        argv[0] = strdup(BASH_PATH);
+        argv[1] = strdup("-c");
+        argv[2] = strdup(this->command.c_str());
+        argv[3] = NULL;
 
+        // Replace with the target process image
         execvp(argv[0], argv);
-
+        // If we're here, then something failed
+        perror(this->command.c_str());
+        return;
     } else {
         this->pid = pid;
+        if (not this->isBackground) {
+            int stat = 0;
+            if (waitpid(pid, &stat, 0) < 0) {
+                throw FailedToWaitOnChild("Failed to wait for " +
+                                          to_string(pid) + " " +
+                                          strerror(errno));
+            }
+        }
     }
 }
 
-string ExternalCommand::getCommandName() const { return this->argv[0]; }
+string ExternalCommand::getCommandName() const { return split(this->command)[0]; }
 pid_t ExternalCommand::getPid() const { return this->pid; }
 string ExternalCommand::getCommand() const {
-    const char *const delim = " ";
-
-    ostringstream imploded;
-    copy(this->argv.begin(), this->argv.end(),
-         ostream_iterator<string>(imploded, delim));
-
-    return imploded.str();
+    return this->command;
 }

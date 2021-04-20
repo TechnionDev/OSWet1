@@ -25,12 +25,12 @@ class BuiltInCommand : public Command {
 };
 
 class ExternalCommand : public Command {
-    std::string command_name;
     pid_t pid;
-    std::vector<std::string> argv;
+    std::string command;
+    bool isBackground;
 
    public:
-    ExternalCommand(std::vector<std::string> &argv);
+    ExternalCommand(std::string command, bool isBackground);
     virtual ~ExternalCommand() = default;
     void execute() override;
     std::string getCommand() const;

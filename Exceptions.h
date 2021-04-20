@@ -16,6 +16,7 @@ EXCEPTION(CommandNotFoundException);
 EXCEPTION(MissingRequiredArgumentsException);
 EXCEPTION(FailedToOpenFileException);
 EXCEPTION(ItemDoesNotExist);
+EXCEPTION(FailedToWaitOnChild);
 
 
 #endif //OSWET1__EXCEPTIONS_H_

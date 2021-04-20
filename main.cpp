@@ -12,6 +12,7 @@ using std::cout;
 using std::flush;
 using std::getline;
 using std::string;
+using std::endl;
 
 int main(int argc, char *argv[]) {
     if (signal(SIGTSTP, ctrlZHandler) == SIG_ERR) {
@@ -51,9 +52,9 @@ int main(int argc, char *argv[]) {
         getline(cin, cmd_line);
 
         try {
-            smash.executeCommand(cmd_line.c_str());
+            smash.executeCommand(cmd_line);
         } catch (CommandException &exp) {
-            cout<<exp.what();
+            cout<<exp.what() << endl;
         }
 
     }

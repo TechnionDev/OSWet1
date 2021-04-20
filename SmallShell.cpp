@@ -1,23 +1,26 @@
 #include "SmallShell.h"
+
+#include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <vector>
+
 #include "Utils.h"
 using namespace std;
 
 typedef enum { kCommandCtor } CommandMapKey;
-typedef Command *(*CommandCtorWrapperFuncPtr)(vector<string>);
+typedef shared_ptr<Command> (*CommandCtorWrapperFuncPtr)(vector<string>);
 
-template<class T>
-Command *constructorWrapper(vector<string> argv) {
-    return new T(argv);
+template <class T>
+shared_ptr<Command> constructorWrapper(vector<string> argv) {
+    return shared_ptr<Command>(new T(argv));
 }
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
@@ -44,25 +47,27 @@ SmallShell::~SmallShell() {
  * Creates and returns a pointer to Command class which matches the given
  * command line (cmd_line)
  */
-Command *SmallShell::CreateCommand(const char *cmd_line) {
-    string cmd_s = _trim(string(cmd_line));
-    char *args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
-    // Split on space
-    vector<string> argv = split(cmd_s, ARG_SEPARATOR);
+shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
+    string no_background_cmd = removeBackgroundSign(cmd_s);
+    // Remove background sign, trim (part of remove background) and split
+    vector<string> argv = split(no_background_cmd);
     if (argv.size() == 0) {
-        return new NopCommand();
+        return shared_ptr<Command>(new NopCommand());
     } else {
         try {
-            return commandsCtors.at(argv[0])(
-                vector<string>(argv.begin() + 1, argv.end()));
+            shared_ptr<Command> cmd =
+                commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
+            return cmd;
         } catch (out_of_range &exc) {
-            // TODO: Run external command here);
+            return shared_ptr<Command>(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
+            // TODO: Run external command here;
         }
     }
 }
 
-void SmallShell::executeCommand(const char *cmd_line) {
-    Command *cmd = CreateCommand(cmd_line);
+void SmallShell::executeCommand(string cmd_line) {
+    shared_ptr<Command> cmd = CreateCommand(cmd_line);
+    // TODO: Handle external isBackground (maybe handle in execute for prettier handling)
     cmd->execute();
 }
 
@@ -70,10 +75,6 @@ void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
 
 string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
 
-std::string SmallShell::getLastDir() const {
-    return self->last_dir;
-}
+std::string SmallShell::getLastDir() const { return self->last_dir; }
 
-void SmallShell::setLastDir(std::string new_dir) {
-    self->last_dir = new_dir;
-}
+void SmallShell::setLastDir(std::string new_dir) { self->last_dir = new_dir; }

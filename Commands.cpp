@@ -1,3 +1,5 @@
+#include "Commands.h"
+
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -8,15 +10,15 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include "Commands.h"
-#include "SmallShell.h"
+
+#include "Exceptions.h"
 #include "Jobs.h"
+#include "SmallShell.h"
 #include "Utils.h"
 
 using namespace std;
 
 // TODO: Add your implementation for classes in Commands.h
-
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
@@ -67,7 +69,7 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
 
 std::string getPwd() {
     char pwd[PATH_MAX];
-    return string(getwd(pwd));
+    return string(getwd(pwd)) + "\n";
 }
 
 void ChangeDirCommand::execute() {
@@ -98,7 +100,7 @@ void ChangeDirCommand::execute() {
 ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
 
 void ShowPidCommand::execute() {
-    cout << "smash pid is " + to_string(getpid());
+    cout << "smash pid is " + to_string(getpid()) << endl;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
@@ -137,31 +139,34 @@ void KillCommand::execute() {
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
-    if (argv[0] == "kill") {
-        kill_all = true;
+    if (argv.size() > 0 and argv[0] == "kill") {
+        this->kill_all = true;
     }
 }
 
 void QuitCommand::execute() {
-    if (kill_all) {
+    if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
-        cout << "smash: sending SIGKILL signal to " + to_string(size) + " jobs:";
+        cout << "smash: sending SIGKILL signal to " + to_string(size) +
+                    " jobs:";
         SmallShell::getInstance().getJobList().killAllJobs();
     }
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
-ExternalCommand::ExternalCommand(vector<string> &argv) : pid(0), argv(argv) {
-    if (argv.size() == 1) {
+ExternalCommand::ExternalCommand(string command, bool isBackground)
+    : pid(0), command(command), isBackground(isBackground) {
+    if (command == "") {
         throw CommandNotFoundException("No command specified");
-    } else if (not can_exec(argv[0].c_str())) {
+    } /* else if (not can_exec(argv[0].c_str())) {
         throw CommandNotFoundException("Command " + argv[0] + " not found");
-    }
+    } */
 }
 
 void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) {
+<<<<<<< HEAD
         // Forked
         // const int size = this->argv.size();
         // char *argv[size];
@@ -177,22 +182,99 @@ void ExternalCommand::execute() {
         argv[2] = new char[cmd.length()];
         strcpy(argv[2], cmd.c_str());
         execvp(argv[0], argv);
+=======
+        // Forked - setup arguments
+        char **argv = new char *[4];
+        argv[0] = strdup(BASH_PATH);
+        argv[1] = strdup("-c");
+        argv[2] = strdup(this->command.c_str());
+        argv[3] = NULL;
+
+        // Replace with the target process image
+        execvp(argv[0], argv);
+        // If we're here, then something failed
+        perror(this->command.c_str());
+        return;
+>>>>>>> 271bf292238e20498dc8d320d3a424a081105129
     } else {
         this->pid = pid;
+        if (not this->isBackground) {
+            int stat = 0;
+            if (waitpid(pid, &stat, 0) < 0) {
+                throw FailedToWaitOnChild("Failed to wait for " +
+                                          to_string(pid) + " " +
+                                          strerror(errno));
+            }
+        }
     }
 }
 
+<<<<<<< HEAD
 string ExternalCommand::getCommandName() const { return this->argv[0]; }
+=======
+string ExternalCommand::getCommandName() const { return split(this->command)[0]; }
+>>>>>>> 271bf292238e20498dc8d320d3a424a081105129
 
 pid_t ExternalCommand::getPid() const { return this->pid; }
 
 string ExternalCommand::getCommand() const {
-    const char *const delim = " ";
+    return this->command;
+}
 
-    ostringstream imploded;
-    copy(this->argv.begin(), this->argv.end(),
-         ostream_iterator<string>(imploded, delim));
+ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
+    try {
+        if (argv.size() > 1) {
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        }
+        if (argv.size() == 1) {
+            job_id = stoi(argv[0]);
+        }
+    } catch (exception &exp) {
+        throw MissingRequiredArgumentsException("fg: invalid arguments");
+    }
+}
 
+void ForegroundCommand::execute() {
+    try {
+        pid_t job_pid;
+        string job_command;
+        if (job_id != 0) {
+            job_command = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getCommand();
+            job_pid = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getPid();
+        } else {
+            job_command = SmallShell::getInstance().getJobList().getLastJob(&job_pid).cmd->getCommand();
+        }
+        cout << job_command + " : " + to_string(job_pid);
+        if (kill(job_pid, SIGCONT) != 0) {
+            perror("smash error: kill failed");
+            return;
+        }
+        SmallShell::getInstance().getJobList().removeJobById(job_pid);
+        if (waitpid(job_pid, nullptr, WUNTRACED) == -1) {
+            perror("smash error: waitpid failed");
+            return;
+        }
+    } catch (CommandException &exp) {
+        string prompt = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist(" fg:" + error_message.substr(prompt.length(), error_message.length()));
+    }
+}
+
+BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
+    try {
+        if (argv.size() > 1) {
+            throw MissingRequiredArgumentsException("bg: invalid arguments");
+        }
+        if (argv.size() == 1) {
+            job_id = stoi(argv[0]);
+        }
+    } catch (exception &exp) {
+        throw MissingRequiredArgumentsException("bg: invalid arguments");
+    }
+}
+
+<<<<<<< HEAD
     return imploded.str();
 }
 
@@ -249,6 +331,8 @@ BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
     }
 }
 
+=======
+>>>>>>> 271bf292238e20498dc8d320d3a424a081105129
 void BackgroundCommand::execute() {
     try {
         JobsList &job_list = SmallShell::getInstance().getJobList();

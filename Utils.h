@@ -1,10 +1,11 @@
 #ifndef OSWET1__UTILS_H_
 #define OSWET1__UTILS_H_
 
+#include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -12,13 +13,23 @@
 #include <sstream>
 #include <vector>
 #define WHITESPACE " "
-using namespace std;
-vector<string> split(const string &str, const string &sep);
-string _ltrim(const std::string &s);
-string _rtrim(const std::string &s);
-string _trim(const std::string &s);
-int _parseCommandLine(const char *cmd_line, char **args);
-bool _isBackgroundComamnd(const char *cmd_line);
-void _removeBackgroundSign(char *cmd_line);
+#define VEC_END (-1)
+
+std::vector<std::string> split(const std::string &str);
+
+std::string trim(const std::string &s);
+
+int parseCommandLine(const char *cmd_line, char **args);
+
+bool isBackgroundComamnd(std::string cmd_line);
+
+std::string removeBackgroundSign(std::string cmd_line);
+
 bool can_exec(const char *file);
-#endif //OSWET1__UTILS_H_
+
+template <class T>
+std::vector<T> subvector(const std::vector<T> &vec, int start, int end = -1) {
+    return std::vector<std::string>(
+        vec.begin() + start, end == -1 ? vec.end() : (vec.begin() + end));
+}
+#endif  // OSWET1__UTILS_H_

@@ -30,6 +30,8 @@ static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
     {"cd", &constructorWrapper<ChangeDirCommand>},
     {"jobs", &constructorWrapper<JobsCommand>},
     {"kill", &constructorWrapper<KillCommand>},
+    {"fg", &constructorWrapper<ForegroundCommand>},
+    {"bg", &constructorWrapper<BackgroundCommand>},
     {"quit", &constructorWrapper<QuitCommand>},
     {"cat", &constructorWrapper<CatCommand>}
     /* Add more commands here */

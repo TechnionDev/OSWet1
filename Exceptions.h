@@ -16,6 +16,8 @@ EXCEPTION(CommandNotFoundException);
 EXCEPTION(MissingRequiredArgumentsException);
 EXCEPTION(FailedToOpenFileException);
 EXCEPTION(ItemDoesNotExist);
+EXCEPTION(ListIsEmpty);
+EXCEPTION(AlreadyRunningInBackGround)
 
 
 #endif //OSWET1__EXCEPTIONS_H_

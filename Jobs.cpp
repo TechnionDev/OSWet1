@@ -51,7 +51,7 @@ JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
             return *it;
         }
     }
-    throw ItemDoesNotExist("getLastStoppedJob");
+    throw ItemDoesNotExist("there is no stopped jobs to resume");
 }
 
 void JobsList::removeFinishedJobs() {

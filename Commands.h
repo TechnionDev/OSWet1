@@ -129,7 +129,7 @@ class KillCommand : public BuiltInCommand {
 
 class ForegroundCommand : public BuiltInCommand {
     // TODO: Add your data members
-    int jod_id = 0;
+    int job_id = 0;
    public:
     ForegroundCommand(std::vector<std::string> &argv);
     virtual ~ForegroundCommand() = default;
@@ -138,6 +138,7 @@ class ForegroundCommand : public BuiltInCommand {
 
 class BackgroundCommand : public BuiltInCommand {
     // TODO: Add your data members
+    int job_id = 0;
    public:
     BackgroundCommand(std::vector<std::string> &argv);
     virtual ~BackgroundCommand() = default;

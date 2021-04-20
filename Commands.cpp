@@ -166,23 +166,6 @@ ExternalCommand::ExternalCommand(string command, bool isBackground)
 void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) {
-<<<<<<< HEAD
-        // Forked
-        // const int size = this->argv.size();
-        // char *argv[size];
-        // for (int i = 0; i < size; i++) {
-        //     argv[i] = new char[this->argv[i].length()];
-        //     strcpy(argv[i], this->argv[i].c_str());
-        // }
-        // execvp(this->argv[0].c_str(), argv);
-        char *argv[3];
-        string cmd = this->getCommand();
-        argv[0] = BASH_PATH;
-        argv[1] = "-c";
-        argv[2] = new char[cmd.length()];
-        strcpy(argv[2], cmd.c_str());
-        execvp(argv[0], argv);
-=======
         // Forked - setup arguments
         char **argv = new char *[4];
         argv[0] = strdup(BASH_PATH);
@@ -195,7 +178,6 @@ void ExternalCommand::execute() {
         // If we're here, then something failed
         perror(this->command.c_str());
         return;
->>>>>>> 271bf292238e20498dc8d320d3a424a081105129
     } else {
         this->pid = pid;
         if (not this->isBackground) {
@@ -209,11 +191,7 @@ void ExternalCommand::execute() {
     }
 }
 
-<<<<<<< HEAD
-string ExternalCommand::getCommandName() const { return this->argv[0]; }
-=======
 string ExternalCommand::getCommandName() const { return split(this->command)[0]; }
->>>>>>> 271bf292238e20498dc8d320d3a424a081105129
 
 pid_t ExternalCommand::getPid() const { return this->pid; }
 
@@ -274,65 +252,6 @@ BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
     }
 }
 
-<<<<<<< HEAD
-    return imploded.str();
-}
-
-ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
-    try {
-        if (argv.size() > 1) {
-            throw MissingRequiredArgumentsException("fg: invalid arguments");
-        }
-        if (argv.size() == 1) {
-            job_id = stoi(argv[0]);
-        }
-    } catch (exception &exp) {
-        throw MissingRequiredArgumentsException("fg: invalid arguments");
-    }
-}
-
-void ForegroundCommand::execute() {
-    try {
-        pid_t job_pid;
-        string job_command;
-        if (job_id != 0) {
-            job_command = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getCommand();
-            job_pid = SmallShell::getInstance().getJobList().getJobById(job_id).cmd->getPid();
-        } else {
-            job_command = SmallShell::getInstance().getJobList().getLastJob(&job_pid).cmd->getCommand();
-        }
-        cout << job_command + " : " + to_string(job_pid);
-        if (kill(job_pid, SIGCONT) != 0) {
-            perror("smash error: kill failed");
-            return;
-        }
-        SmallShell::getInstance().getJobList().removeJobById(job_pid);
-        if (waitpid(job_pid, nullptr, WUNTRACED) == -1) {
-            perror("smash error: waitpid failed");
-            return;
-        }
-    } catch (CommandException &exp) {
-        string prompt = ERR_PREFIX;
-        string error_message = string(exp.what());
-        throw ItemDoesNotExist(" fg:" + error_message.substr(prompt.length(), error_message.length()));
-    }
-}
-
-BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
-    try {
-        if (argv.size() > 1) {
-            throw MissingRequiredArgumentsException("bg: invalid arguments");
-        }
-        if (argv.size() == 1) {
-            job_id = stoi(argv[0]);
-        }
-    } catch (exception &exp) {
-        throw MissingRequiredArgumentsException("bg: invalid arguments");
-    }
-}
-
-=======
->>>>>>> 271bf292238e20498dc8d320d3a424a081105129
 void BackgroundCommand::execute() {
     try {
         JobsList &job_list = SmallShell::getInstance().getJobList();

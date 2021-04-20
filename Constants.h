@@ -9,7 +9,7 @@
 
 
 // String constants
-#define BASH_PATH "/usr/bin/bash"
+#define BASH_PATH "/bin/bash"
 #define ARG_SEPARATOR " "
 #define SHELL_NAME "smash"
 #define ERR_PREFIX_NOSPACE SHELL_NAME " error:"

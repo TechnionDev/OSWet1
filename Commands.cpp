@@ -112,11 +112,15 @@ void JobsCommand::execute() {
 }
 
 KillCommand::KillCommand(vector<string> &argv) {
-    if (argv[0][0] != '-') {
-        throw (CommandNotFoundException("kill: invalid arguments"));
+    try {
+        if (argv[0][0] != '-') {
+            throw CommandNotFoundException("kill: invalid arguments");
+        }
+        sig_num = stoi(argv[0].substr(1));
+        jod_id = stoi(argv[1]);
+    } catch (exception &exp) {
+        throw CommandNotFoundException("kill: invalid arguments");
     }
-    sig_num = int(argv[0][1]);
-    jod_id = int(argv[1][0]);
 }
 
 void KillCommand::execute() {
@@ -126,10 +130,10 @@ void KillCommand::execute() {
     } catch (ItemDoesNotExist &exp) {
         throw exp;
     }
-    if (kill(res_pid, SIG_KILL) != 0) {
+    if (kill(res_pid, sig_num) != 0) {
         perror("smash error: kill failed");
     }
-    cout << "signal number 9 was sent to pid " + to_string(sig_num);
+    cout << "signal number "+to_string(sig_num)+" was sent to pid " + to_string(res_pid);
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -191,11 +195,15 @@ string ExternalCommand::getCommand() const {
 }
 
 ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
-    if (argv.size() > 1) {
+    try {
+        if (argv.size() > 1) {
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        }
+        if (argv.size() == 1) {
+            jod_id = stoi(argv[0]);
+        }
+    } catch (exception &exp) {
         throw MissingRequiredArgumentsException("fg: invalid arguments");
-    }
-    if (argv.size() == 1) {
-        jod_id = stoi(argv[0]);
     }
 }
 void ForegroundCommand::execute() {

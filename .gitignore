@@ -4,6 +4,7 @@ build/
 *.zip
 .DS_Store
 sandbox*
+OSWet1-main/
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,vscode,visualstudiocode,jetbrains,clion,cmake

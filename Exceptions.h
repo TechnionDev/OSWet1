@@ -18,6 +18,7 @@ EXCEPTION(FailedToOpenFileException);
 EXCEPTION(ItemDoesNotExist);
 EXCEPTION(ListIsEmpty);
 EXCEPTION(AlreadyRunningInBackGround);
+EXCEPTION(FailedToWaitOnChild);
 
 
 #endif //OSWET1__EXCEPTIONS_H_

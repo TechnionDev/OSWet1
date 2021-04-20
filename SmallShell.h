@@ -26,7 +26,7 @@ class SmallShell {
   std::string getLastDir() const;
   JobsList &getJobList() { return smash_job_list; }
   ~SmallShell();
-  void executeCommand(const char *cmd_line);
+  void executeCommand(std::string cmd_line);
   const std::shared_ptr<ExternalCommand> &getExternalCommand() const { return cmd; }
   // TODO: add extra methods as needed
 };

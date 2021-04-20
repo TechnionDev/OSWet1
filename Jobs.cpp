@@ -36,8 +36,11 @@ void JobsList::removeJobById(int jobId) {
     throw ItemDoesNotExist(" job-id " + to_string(jobId) + "does not exist");
 }
 
-JobsList::JobEntry &JobsList::getLastJob(int *lastJobId) {
-    *lastJobId = job_list.back().jod_id;
+JobsList::JobEntry &JobsList::getLastJob(int *lastJobPid) {
+    if(job_list.empty()){
+        throw ListIsEmpty("jobs list is empty");
+    }
+    *lastJobPid = job_list.back().cmd->getPid();
     return job_list.back();
 }
 

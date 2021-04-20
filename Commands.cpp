@@ -189,3 +189,39 @@ string ExternalCommand::getCommand() const {
 
     return imploded.str();
 }
+
+ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
+    if (argv.size() > 1) {
+        throw MissingRequiredArgumentsException("fg: invalid arguments");
+    }
+    if (argv.size() == 1) {
+        jod_id = stoi(argv[0]);
+    }
+}
+void ForegroundCommand::execute() {
+    try {
+        pid_t job_pid;
+        string job_command;
+        if (jod_id != 0) {
+            job_command = SmallShell::getInstance().getJobList().getJobById(jod_id).cmd->getCommand();
+            job_pid = SmallShell::getInstance().getJobList().getJobById(jod_id).cmd->getPid();
+        } else {
+            job_command = SmallShell::getInstance().getJobList().getLastJob(&job_pid).cmd->getCommand();
+        }
+        cout << job_command + " : " + to_string(job_pid);
+        if (kill(job_pid, SIGCONT) != 0) {
+            perror("smash error: kill failed");
+            return;
+        }
+        SmallShell::getInstance().getJobList().removeJobById(job_pid);
+        int wStatus;
+        if (waitpid(job_pid, &wStatus, WUNTRACED) == -1) {
+            perror("smash error: waitpid failed");
+            return;
+        }
+    } catch (CommandException &exp) {
+        string prompt = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist(" fg:" + error_message.substr(prompt.length(), error_message.length()));
+    }
+}

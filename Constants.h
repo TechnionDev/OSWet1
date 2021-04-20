@@ -7,7 +7,6 @@
 #define MAX_JOBS_COUNT 100
 #define MAX_PROC_NAME 50
 
-
 // String constants
 #define BASH_PATH "/bin/bash"
 #define ARG_SEPARATOR " "
@@ -15,7 +14,7 @@
 #define ERR_PREFIX_NOSPACE SHELL_NAME " error:"
 #define ERR_PREFIX ERR_PREFIX_NOSPACE " "
 #define PROMPT_SIGN "> "
-#define ERROR(x) (ERR_PREFIX_NOSPACE PROMPT_SIGN"\"" x "\"")
+#define ERROR(x) (ERR_PREFIX_NOSPACE PROMPT_SIGN "\"" x "\"")
 #define WHITESPACE " "
 //
 #define SIG_KILL 9

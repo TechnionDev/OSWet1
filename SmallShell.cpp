@@ -59,15 +59,16 @@ shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
                 commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
             return cmd;
         } catch (out_of_range &exc) {
-            return shared_ptr<Command>(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
-            // TODO: Run external command here;
+            return shared_ptr<Command>(new ExternalCommand(
+                no_background_cmd, isBackgroundComamnd(cmd_s)));
         }
     }
 }
 
 void SmallShell::executeCommand(string cmd_line) {
     shared_ptr<Command> cmd = CreateCommand(cmd_line);
-    // TODO: Handle external isBackground (maybe handle in execute for prettier handling)
+    // TODO: Handle external isBackground (maybe handle in execute for prettier
+    // handling)
     cmd->execute();
 }
 

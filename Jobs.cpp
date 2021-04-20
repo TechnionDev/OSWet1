@@ -1,18 +1,20 @@
 #include "Jobs.h"
-#include <string>
-#include "Constants.h"
-#include <iostream>
-#include "Exceptions.h"
+
 #include <signal.h>
+
+#include <iostream>
+#include <string>
+
+#include "Constants.h"
+#include "Exceptions.h"
 using namespace std;
-void JobsList::addJob(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped) {
+void JobsList::addJob(const std::shared_ptr<ExternalCommand> &cmd,
+                      bool isStopped) {
     removeFinishedJobs();
     max_jod_id++;
     job_list.emplace_back(cmd, isStopped, max_jod_id);
 }
-JobsList::JobsList() {
-    max_jod_id = 0;
-}
+JobsList::JobsList() { max_jod_id = 0; }
 
 JobsList::JobEntry &JobsList::getJobById(int jobId) {
     for (auto &it : job_list) {
@@ -37,7 +39,7 @@ void JobsList::removeJobById(int jobId) {
 }
 
 JobsList::JobEntry &JobsList::getLastJob(int *lastJobPid) {
-    if(job_list.empty()){
+    if (job_list.empty()) {
         throw ListIsEmpty("jobs list is empty");
     }
     *lastJobPid = job_list.back().cmd->getPid();
@@ -57,7 +59,9 @@ JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
 void JobsList::removeFinishedJobs() {
     for (auto it = job_list.begin(); it != job_list.end(); it++) {
         if (waitpid(it->cmd->getPid(), nullptr, WNOHANG) != 0) {
-            if (it->jod_id == max_jod_id) { max_jod_id--; }
+            if (it->jod_id == max_jod_id) {
+                max_jod_id--;
+            }
             job_list.erase(it);
         }
     }
@@ -72,15 +76,18 @@ void JobsList::killAllJobs() {
     max_jod_id = 0;
 }
 
-bool JobsList::compare(const JobsList::JobEntry &first_entry, const JobsList::JobEntry &second_entry) {
+bool JobsList::compare(const JobsList::JobEntry &first_entry,
+                       const JobsList::JobEntry &second_entry) {
     if (first_entry.jod_id < second_entry.jod_id) {
         return true;
-    } else { return false; }
+    } else {
+        return false;
+    }
 }
 
-JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd, bool isStopped, int job_id) :
-    is_stopped(isStopped),
-    jod_id(job_id) {
+JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd,
+                             bool isStopped, int job_id)
+    : is_stopped(isStopped), jod_id(job_id) {
     time(&time_inserted);
     this->cmd = cmd;
 }
@@ -90,14 +97,17 @@ void JobsList::printJobsList() {
     job_list.sort(compare);
     for (auto &it : job_list) {
         if (it.is_stopped) {
-            cout << "[" + to_string(it.jod_id) + "] " + it.cmd->getCommandName() + " : " + to_string(it.cmd->getPid())
-                + " " + to_string(difftime(time(nullptr), it.time_inserted)) + " (stopped)";
+            cout << "[" + to_string(it.jod_id) + "] " +
+                        it.cmd->getCommandName() + " : " +
+                        to_string(it.cmd->getPid()) + " " +
+                        to_string(difftime(time(nullptr), it.time_inserted)) +
+                        " (stopped)";
         } else {
-            cout << "[" + to_string(it.jod_id) + "] " + it.cmd->getCommandName() + " : " + to_string(it.cmd->getPid())
-                + " " + to_string(difftime(time(nullptr), it.time_inserted));
+            cout << "[" + to_string(it.jod_id) + "] " +
+                        it.cmd->getCommandName() + " : " +
+                        to_string(it.cmd->getPid()) + " " +
+                        to_string(difftime(time(nullptr), it.time_inserted));
         }
     }
 }
-JobsList::~JobsList() {
-
-}
+JobsList::~JobsList() {}

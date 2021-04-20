@@ -1,6 +1,9 @@
-#include <iostream>
-#include <signal.h>
 #include "signals.h"
+
+#include <signal.h>
+
+#include <iostream>
+
 #include "Commands.h"
 #include "SmallShell.h"
 using namespace std;
@@ -27,7 +30,8 @@ void ctrlCHandler(int sig_num) {
             perror("smash error: kill failed");
             return;
         }
-        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), true);
+        SmallShell::getInstance().getJobList().addJob(
+            SmallShell::getInstance().getExternalCommand(), true);
         cout << "smash: process " + to_string(curr_pid) + " was stopped";
     }
 }
@@ -35,4 +39,3 @@ void ctrlCHandler(int sig_num) {
 void alarmHandler(int sig_num) {
     // TODO: Add your implementation
 }
-

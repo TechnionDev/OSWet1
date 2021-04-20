@@ -29,29 +29,11 @@ vector<string> split(const string &str) {
     wordexp_t we;
     wordexp(str.c_str(), &we, 0);
     vector<string> argv(we.we_wordc);
-    for(int i = 0; i<we.we_wordc; i++){
+    for (int i = 0; i < we.we_wordc; i++) {
         argv[i] = string(we.we_wordv[i]);
     }
 
     return argv;
-
-    // execvp(we.we_wordv[0], we.we_wordv);
-
-    // for (size_t curr_pos = str.find(sep, 0), prev_pos = 0;
-    //      curr_pos < str.length() || prev_pos < str.length();
-    //      prev_pos = curr_pos + sep.length(),
-    //             curr_pos = str.find(sep, prev_pos)) {
-    //     // No next delim
-    //     if (curr_pos == string::npos) {
-    //         curr_pos = str.length();
-    //     }
-    //     // Retreive current arg
-    //     string arg = str.substr(prev_pos, curr_pos - prev_pos);
-    //     if (!arg.empty()) {
-    //         argv.push_back(arg);
-    //     }
-    // }
-    // return argv;
 }
 string _ltrim(const std::string &s) {
     size_t start = s.find_first_not_of(WHITESPACE);

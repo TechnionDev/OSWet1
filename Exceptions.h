@@ -8,8 +8,8 @@
     }
 
 class CommandException : public std::runtime_error {
- public:
-  CommandException(std::string str) : std::runtime_error(ERR_PREFIX + str) {};
+   public:
+    CommandException(std::string str) : std::runtime_error(ERR_PREFIX + str){};
 };
 
 EXCEPTION(CommandNotFoundException);
@@ -20,5 +20,4 @@ EXCEPTION(ListIsEmpty);
 EXCEPTION(AlreadyRunningInBackGround);
 EXCEPTION(FailedToWaitOnChild);
 
-
-#endif //OSWET1__EXCEPTIONS_H_
+#endif  // OSWET1__EXCEPTIONS_H_

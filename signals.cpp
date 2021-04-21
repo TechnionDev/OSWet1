@@ -8,7 +8,7 @@
 #include "SmallShell.h"
 using namespace std;
 
-void ctrlZHandler(int sig_num) {
+void ctrlCHandler(int sig_num) {
     // TODO: Add your implementation
     cout << "smash: got ctrl-C";
     pid_t curr_pid = SmallShell::getInstance().getExternalCommand()->getPid();
@@ -21,7 +21,7 @@ void ctrlZHandler(int sig_num) {
     }
 }
 
-void ctrlCHandler(int sig_num) {
+void ctrlZHandler(int sig_num) {
     // TODO: Add your implementation
     cout << "smash: got ctrl-Z";
     pid_t curr_pid = SmallShell::getInstance().getExternalCommand()->getPid();

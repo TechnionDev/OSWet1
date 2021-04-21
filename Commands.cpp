@@ -18,8 +18,6 @@
 
 using namespace std;
 
-// TODO: Add your implementation for classes in Commands.h
-
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
         new_prompt = SHELL_NAME;

@@ -30,7 +30,7 @@ class ExternalCommand : public Command {
     bool isBackground;
 
    public:
-    ExternalCommand(std::string command, bool isBackground);
+    ExternalCommand(const std::string& command, bool isBackground);
     virtual ~ExternalCommand() = default;
     void execute() override;
     std::string getCommand() const;
@@ -91,7 +91,7 @@ class GetCurrDirCommand : public BuiltInCommand {
 
 class ShowPidCommand : public BuiltInCommand {
    private:
-    int pwd;
+    int pwd{};
 
    public:
     ShowPidCommand(std::vector<std::string> &argv);

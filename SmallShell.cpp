@@ -18,7 +18,7 @@ using namespace std;
 typedef enum { kCommandCtor } CommandMapKey;
 typedef shared_ptr<Command> (*CommandCtorWrapperFuncPtr)(vector<string>);
 
-template <class T>
+template<class T>
 shared_ptr<Command> constructorWrapper(vector<string> argv) {
     return shared_ptr<Command>(new T(argv));
 }
@@ -59,8 +59,9 @@ shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
                 commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
             return cmd;
         } catch (out_of_range &exc) {
-            return shared_ptr<Command>(new ExternalCommand(
-                no_background_cmd, isBackgroundComamnd(cmd_s)));
+            const shared_ptr<ExternalCommand> cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
+            setExternalCommand(cmd);
+            return cmd;
         }
     }
 }
@@ -70,6 +71,7 @@ void SmallShell::executeCommand(string cmd_line) {
     // TODO: Handle external isBackground (maybe handle in execute for prettier
     // handling)
     cmd->execute();
+    this->cmd = nullptr;
 }
 
 void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
@@ -79,3 +81,7 @@ string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
 std::string SmallShell::getLastDir() const { return self->last_dir; }
 
 void SmallShell::setLastDir(std::string new_dir) { self->last_dir = new_dir; }
+
+void SmallShell::setExternalCommand(const shared_ptr<ExternalCommand> &parm_cmd) {
+    this->cmd = parm_cmd;
+}

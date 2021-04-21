@@ -4,7 +4,6 @@
 #include "Jobs.h"
 class SmallShell {
  private:
-  pid_t curr_pid;
   std::string prompt;
   std::string last_dir;
   SmallShell();
@@ -28,6 +27,7 @@ class SmallShell {
   ~SmallShell();
   void executeCommand(std::string cmd_line);
   const std::shared_ptr<ExternalCommand> &getExternalCommand() const { return cmd; }
+  void setExternalCommand(const std::shared_ptr<ExternalCommand> &parm_cmd);
   // TODO: add extra methods as needed
 };
 

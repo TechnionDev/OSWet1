@@ -12,7 +12,8 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#define WHITESPACE " "
+
+#include "Constants.h"
 #define VEC_END (-1)
 
 std::vector<std::string> split(const std::string &str);

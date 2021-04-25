@@ -9,10 +9,10 @@
 
 using std::cin;
 using std::cout;
+using std::endl;
 using std::flush;
 using std::getline;
 using std::string;
-using std::endl;
 
 int main(int argc, char *argv[]) {
     if (signal(SIGTSTP, ctrlZHandler) == SIG_ERR) {
@@ -57,7 +57,6 @@ int main(int argc, char *argv[]) {
         } catch (CommandException &exp) {
             cout << exp.what() << endl;
         }
-
     }
     return 0;
 }

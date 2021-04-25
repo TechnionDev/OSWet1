@@ -13,9 +13,13 @@
 #include <vector>
 
 #include "Utils.h"
+
 using namespace std;
 
-typedef enum { kCommandCtor } CommandMapKey;
+typedef enum {
+    kCommandCtor
+} CommandMapKey;
+
 typedef shared_ptr<Command> (*CommandCtorWrapperFuncPtr)(vector<string>);
 
 template<class T>
@@ -24,17 +28,17 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 }
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
-    {"chprompt", &constructorWrapper<ChangePromptCommand>},
-    {"showpid", &constructorWrapper<ShowPidCommand>},
-    {"pwd", &constructorWrapper<GetCurrDirCommand>},
-    {"cd", &constructorWrapper<ChangeDirCommand>},
-    {"jobs", &constructorWrapper<JobsCommand>},
-    {"kill", &constructorWrapper<KillCommand>},
-    {"fg", &constructorWrapper<ForegroundCommand>},
-    {"bg", &constructorWrapper<BackgroundCommand>},
-    {"quit", &constructorWrapper<QuitCommand>},
-    {"cat", &constructorWrapper<CatCommand>}
-    /* Add more commands here */
+        {"chprompt", &constructorWrapper<ChangePromptCommand>},
+        {"showpid",  &constructorWrapper<ShowPidCommand>},
+        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
+        {"cd",       &constructorWrapper<ChangeDirCommand>},
+        {"jobs",     &constructorWrapper<JobsCommand>},
+        {"kill",     &constructorWrapper<KillCommand>},
+        {"fg",       &constructorWrapper<ForegroundCommand>},
+        {"bg",       &constructorWrapper<BackgroundCommand>},
+        {"quit",     &constructorWrapper<QuitCommand>},
+        {"cat",      &constructorWrapper<CatCommand>}
+        /* Add more commands here */
 };
 
 SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
@@ -56,7 +60,7 @@ shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
     } else {
         try {
             shared_ptr<Command> cmd =
-                commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
+                    commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
             return cmd;
         } catch (out_of_range &exc) {
             const shared_ptr<ExternalCommand> cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
@@ -67,11 +71,30 @@ shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
 }
 
 void SmallShell::executeCommand(string cmd_line) {
-    shared_ptr<Command> cmd = CreateCommand(cmd_line);
-    // TODO: Handle external isBackground (maybe handle in execute for prettier
-    // handling)
-    cmd->execute();
-    this->cmd = nullptr;
+    auto cmd_tuple = splitPipeRedirect(cmd_line);
+    int fds[2] = {0};
+    // Switch on the type of command
+    switch (cmd_tuple[0]) {
+        case PIPE:
+
+            break;
+
+        default:
+
+    }
+
+    if (cmd_tuple[0] == NORMAL) {
+        shared_ptr<Command> cmd = CreateCommand(cmd_line);
+        // TODO: Handle external isBackground (maybe handle in execute for prettier
+        // handling)
+        cmd->execute();
+        this->cmd = nullptr;
+    } else {
+        shared_ptr<Command> cmd1 = CreateCommand(cmd_tuple[1]),
+                cmd2 = CreateCommand(cmd_tuple[2]);
+
+    }
+
 }
 
 void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }

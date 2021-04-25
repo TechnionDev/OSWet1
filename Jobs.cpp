@@ -11,103 +11,119 @@ using namespace std;
 void JobsList::addJob(const std::shared_ptr<ExternalCommand> &cmd,
                       bool isStopped) {
     removeFinishedJobs();
-    max_jod_id++;
-    job_list.emplace_back(cmd, isStopped, max_jod_id);
+    this->max_jod_id++;
+    jobs.emplace_back(new JobEntry(cmd, isStopped, this->max_jod_id));
 }
-JobsList::JobsList() { max_jod_id = 0; }
+JobsList::JobsList() : max_jod_id(0), jobs(), foreground_job(NULL) {}
 
-JobsList::JobEntry &JobsList::getJobById(int jobId) {
-    for (auto &it : job_list) {
-        if (it.jod_id == jobId) {
+shared_ptr<JobsList::JobEntry> JobsList::getJobById(int job_id) {
+    for (auto &it : jobs) {
+        if (it->jod_id == job_id) {
             return it;
         }
     }
-    throw ItemDoesNotExist(" job-id " + to_string(jobId) + "does not exist");
+    throw ItemDoesNotExist(" job-id " + to_string(job_id) + "does not exist");
 }
 
-void JobsList::removeJobById(int jobId) {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        if (it->jod_id == jobId) {
-            if (it->jod_id == max_jod_id) {
-                max_jod_id--;
+void JobsList::setForegroundJob(int job_id) {
+    for (auto it = jobs.begin(); it != this->jobs.end(); it++) {
+        if ((*it)->jod_id == job_id) {
+            if ((*it)->jod_id == this->max_jod_id) {
+                this->max_jod_id--;  // TODO: Fix this bug. There might be
+                                     // wholes
             }
-            job_list.erase(it);
+            this->foreground_job = *it;
+            jobs.erase(it);
+            if (kill(this->foreground_job->jod_id, SIGCONT) != 0) {
+                perror("smash error: kill failed");
+                throw FailedToResumeChild(
+                    "child " + to_string(this->foreground_job->jod_id));
+            }
             return;
         }
     }
-    throw ItemDoesNotExist(" job-id " + to_string(jobId) + "does not exist");
+    throw ItemDoesNotExist("job-id " + to_string(job_id) + "does not exist");
 }
 
-JobsList::JobEntry &JobsList::getLastJob(int *lastJobPid) {
-    if (job_list.empty()) {
+shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid) {
+    if (jobs.empty()) {
         throw ListIsEmpty("jobs list is empty");
     }
-    *lastJobPid = job_list.back().cmd->getPid();
-    return job_list.back();
+    *lastJobPid = jobs.back()->cmd->getPid();
+    return jobs.back();
 }
 
-JobsList::JobEntry &JobsList::getLastStoppedJob(int *jobId) {
-    for (auto it = job_list.rbegin(); it != job_list.rend(); ++it) {
-        if (it->is_stopped) {
-            *jobId = it->jod_id;
-            return *it;
+shared_ptr<JobsList::JobEntry> JobsList::getLastStoppedJob(int *job_id) {
+    for (auto it = jobs.rbegin(); it != jobs.rend(); ++it) {
+        if ((*it)->is_stopped) {
+            *job_id = (*it)->jod_id;
+            return (*it);
         }
     }
     throw ItemDoesNotExist("there is no stopped jobs to resume");
 }
 
 void JobsList::removeFinishedJobs() {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        if (waitpid(it->cmd->getPid(), nullptr, WNOHANG) != 0) {
-            if (it->jod_id == max_jod_id) {
+    for (auto it = jobs.begin(); it != jobs.end(); it++) {
+        if (waitpid((*it)->cmd->getPid(), nullptr, WNOHANG) != 0) {
+            if ((*it)->jod_id == max_jod_id) {
+                // TODO: Fix bug
                 max_jod_id--;
             }
-            job_list.erase(it);
+            jobs.erase(it);
         }
     }
 }
 
 void JobsList::killAllJobs() {
-    for (auto it = job_list.begin(); it != job_list.end(); it++) {
-        kill(it->cmd->getPid(), SIG_KILL);
-        cout << to_string(it->cmd->getPid()) + ": " + it->cmd->getCommand();
-        job_list.erase(it);
+    for (auto it = jobs.begin(); it != jobs.end(); it++) {
+        kill((*it)->cmd->getPid(), SIG_KILL);
+        cout << to_string((*it)->cmd->getPid()) + ": " +
+                    (*it)->cmd->getCommand()
+             << endl;
+        jobs.erase(it);
     }
     max_jod_id = 0;
 }
 
-bool JobsList::compare(const JobsList::JobEntry &first_entry,
-                       const JobsList::JobEntry &second_entry) {
-    if (first_entry.jod_id < second_entry.jod_id) {
+bool JobsList::compare(const shared_ptr<JobEntry> first_entry,
+                       const shared_ptr<JobEntry> second_entry) {
+    if (first_entry->jod_id < second_entry->jod_id) {
         return true;
     } else {
         return false;
     }
 }
 
-JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd,
+JobsList::JobEntry::JobEntry(std::shared_ptr<ExternalCommand> cmd,
                              bool isStopped, int job_id)
     : is_stopped(isStopped), jod_id(job_id) {
+    if (cmd == nullptr) {
+        throw NoJobProvided("On JobEntry c'tor");
+    }
     time(&time_inserted);
     this->cmd = cmd;
 }
 
 void JobsList::printJobsList() {
     removeFinishedJobs();
-    job_list.sort(compare);
-    for (auto &it : job_list) {
-        if (it.is_stopped) {
-            cout << "[" + to_string(it.jod_id) + "] " +
-                        it.cmd->getCommandName() + " : " +
-                        to_string(it.cmd->getPid()) + " " +
-                        to_string(difftime(time(nullptr), it.time_inserted)) +
+    jobs.sort(compare);
+    for (auto &it : jobs) {
+        if (it->is_stopped) {
+            cout << "[" + to_string(it->jod_id) + "] " +
+                        it->cmd->getCommandName() + " : " +
+                        to_string(it->cmd->getPid()) + " " +
+                        to_string(
+                            (int)difftime(time(nullptr), it->time_inserted)) +
                         " (stopped)";
         } else {
-            cout << "[" + to_string(it.jod_id) + "] " +
-                        it.cmd->getCommandName() + " : " +
-                        to_string(it.cmd->getPid()) + " " +
-                        to_string(difftime(time(nullptr), it.time_inserted));
+            cout << "[" + to_string(it->jod_id) + "] " +
+                        it->cmd->getCommandName() + " : " +
+                        to_string(it->cmd->getPid()) + " " +
+                        to_string(
+                            (int)difftime(time(nullptr), it->time_inserted));
         }
+        cout << endl;
     }
 }
 JobsList::~JobsList() {}

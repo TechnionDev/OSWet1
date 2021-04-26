@@ -14,7 +14,7 @@ private:
     JobsList smash_job_list;
     std::shared_ptr<ExternalCommand> cmd = nullptr;
 public:
-    std::shared_ptr<Command> CreateCommand(std::string cmd_line);
+    std::shared_ptr<Command> createCommand(std::string cmd_line);
 
     SmallShell(SmallShell const &) = delete;      // disable copy ctor
     void operator=(SmallShell const &) = delete;  // disable = operator

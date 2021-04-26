@@ -13,7 +13,7 @@ First, you have to understand the skeleton design.
 The given skeleton works as follows:
 - in smash.cpp the main function runs an infinite loop that reads the next typed command
 - after reading the next command it calls the SmallShell::executeCommand
-- SmallShell::executeCommand should create the relevant command class using the factory method CreateCommand
+- SmallShell::executeCommand should create the relevant command class using the factory method createCommand
 - After instantiating the relevant Command class, you have to:
 	- fork if needed
 	- call setpgrp from the child process
@@ -24,7 +24,7 @@ To implement new commands, you need to:
 - Implement the new command Class in Commands.cpp
 - Add any private data fields in the created class and initialize them in the ctor
 - Implement the new command execute method
-- Add if statement to handle it in the SmallShell::CreateCommand
+- Add if statement to handle it in the SmallShell::createCommand
 
 We recommend that you start your implementation with:
 - the simple built-in commands (e.g., chprompt/pwd/showpid/cd/...), after making sure that they work fine with no bugs, then move forward

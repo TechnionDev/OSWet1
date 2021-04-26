@@ -51,7 +51,7 @@ SmallShell::~SmallShell() {
  * Creates and returns a pointer to Command class which matches the given
  * command line (cmd_line)
  */
-shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
+shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     string no_background_cmd = removeBackgroundSign(cmd_s);
     // Remove background sign, trim (part of remove background) and split
     vector<string> argv = split(no_background_cmd);
@@ -73,28 +73,30 @@ shared_ptr<Command> SmallShell::CreateCommand(string cmd_s) {
 void SmallShell::executeCommand(string cmd_line) {
     auto cmd_tuple = splitPipeRedirect(cmd_line);
     int fds[2] = {0};
+    int old_fds[2] = {STDIN_FILENO, STDIN_FILENO};
     // Switch on the type of command
-    switch (cmd_tuple[0]) {
-        case PIPE:
+//    switch (cmd_tuple[0]) {
+//        case PIPE:
+//            auto cmd1 = this->createCommand(cmd_tuple[1]);
+//            auto cmd2 = this->createCommand(cmd_tuple[2]);
+//            dup
+//            break;
+//
+//        default:
+//
+//    }
 
-            break;
-
-        default:
-
-    }
-
-    if (cmd_tuple[0] == NORMAL) {
-        shared_ptr<Command> cmd = CreateCommand(cmd_line);
+    if (get<0>(cmd_tuple) == NORMAL) {
+        shared_ptr<Command> cmd = createCommand(cmd_line);
         // TODO: Handle external isBackground (maybe handle in execute for prettier
         // handling)
         cmd->execute();
         this->cmd = nullptr;
     } else {
-        shared_ptr<Command> cmd1 = CreateCommand(cmd_tuple[1]),
-                cmd2 = CreateCommand(cmd_tuple[2]);
+        shared_ptr<Command> cmd1 = createCommand(get<1>(cmd_tuple)),
+                cmd2 = createCommand(get<2>(cmd_tuple));
 
     }
-
 }
 
 void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }

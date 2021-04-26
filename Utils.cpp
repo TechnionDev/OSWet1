@@ -36,7 +36,7 @@ tuple<CommandType, string, string> splitPipeRedirect(const string &str) {
 
     for (const auto &delim_type: delim_to_type) {
         auto pos = str.find(delim_type.first);
-        if (pos) {
+        if (pos != string::npos) {
             return tuple<CommandType, string, string>(delim_type.second,
                                                       str.substr(0, pos),
                                                       str.substr(pos + delim_type.first.length()));

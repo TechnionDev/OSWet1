@@ -22,7 +22,6 @@ class JobsList {
                  bool isStopped = false, int job_id = 0);
     };
 
-    // TODO: Add your data members
     int max_jod_id;
     std::list<std::shared_ptr<JobEntry>> jobs;
     std::shared_ptr<JobEntry> foreground_job;
@@ -42,7 +41,6 @@ class JobsList {
     std::shared_ptr<JobEntry> getLastJob(int *lastJobPid);
     std::shared_ptr<JobEntry> getLastStoppedJob(int *jobId);
     int size() { return jobs.size(); }
-    // TODO: Add extra methods or modify exisitng ones as needed
 };
 
 #endif  // OSWET1__JOBS_H_

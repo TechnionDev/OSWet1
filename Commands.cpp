@@ -17,7 +17,7 @@
 using namespace std;
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
-    if (argv.size() == 0) {
+    if (argv.empty()) {
         new_prompt = SHELL_NAME;
     } else {
         new_prompt = argv[0];
@@ -159,7 +159,7 @@ void QuitCommand::execute() {
 }
 
 ExternalCommand::ExternalCommand(const string &command, bool isBackground)
-        : pid(0), command(command), isBackground(isBackground) {
+    : pid(0), command(command), isBackground(isBackground) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }
@@ -170,7 +170,9 @@ ExternalCommand::ExternalCommand(const string &command, bool isBackground)
 
 void ExternalCommand::execute() {
     pid_t pid = fork();
-    if (pid == 0) {
+    if (pid == -1) {
+        throw CommandException(string("fork failed: ") + strerror(errno));
+    } else if (pid == 0) {
         setpgrp();
         // Forked - setup arguments
         char **argv = new char *[4];
@@ -182,20 +184,17 @@ void ExternalCommand::execute() {
         // Replace with the target process image
         execvp(argv[0], argv);
         // If we're here, then something failed
-        perror(this->command.c_str());
-        return;
+        throw CommandException(string("execvp failed: ") + strerror(errno));
     } else {
         this->pid = pid;
         if (not this->isBackground) {
             int stat = 0;
             if (waitpid(pid, &stat, WUNTRACED) < 0) {
-                throw FailedToWaitOnChild("Failed to wait for " +
-                    to_string(pid) + " " +
-                    strerror(errno));
+                throw CommandException(string("waitpid failed: ") + strerror(errno));
             }
-        }
-        SmallShell::getInstance().getJobList().addJob(
+            SmallShell::getInstance().getJobList().addJob(
                 SmallShell::getInstance().getExternalCommand(), false);
+        }
     }
 }
 
@@ -208,7 +207,7 @@ pid_t ExternalCommand::getPid() const { return this->pid; }
 string ExternalCommand::getCommand() const { return this->command; }
 
 ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
-        : job_id(0 /* 0 means last job */) {
+    : job_id(0 /* 0 means last job */) {
     if (argv.size() > 1) {
         throw MissingRequiredArgumentsException("fg: invalid arguments");
     }
@@ -217,7 +216,7 @@ ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
             this->job_id = stoi(argv[0]);
         } catch (invalid_argument &exp) {
             throw MissingRequiredArgumentsException("fg: invalid arguments");
-        } catch (out_of_range &exp){
+        } catch (out_of_range &exp) {
             throw MissingRequiredArgumentsException("fg: invalid arguments");
         }
     }
@@ -238,36 +237,33 @@ void ForegroundCommand::execute() {
         }
         cout << job_command + " : " + to_string(job_pid);
         if (kill(job_pid, SIGCONT) != 0) {
-            perror("smash error: kill failed");
-            return;
+            throw CommandException(string("kill failed: ") + strerror(errno));
         }
         smash.getJobList().setForegroundJob(this->job_id);
 
         if (waitpid(job_pid, nullptr, WUNTRACED) == -1) {
-            perror("smash error: waitpid failed");
-            return;
+            throw CommandException(string("waitpid failed: ") + strerror(errno));
         }
     } catch (CommandException &exp) {
         string err_prefix = ERR_PREFIX;
         string error_message = string(exp.what());
-        // TODO: Magic string
         throw ItemDoesNotExist(
-            " fg:" +
+            "fg:" +
                 error_message.substr(err_prefix.length(), error_message.length()));
+    } catch (exception &exp) {
+        throw exp;
     }
 }
 
 BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
     try {
         if (argv.size() > 1) {
-            // TODO: Magic string
             throw MissingRequiredArgumentsException("bg: invalid arguments");
         }
         if (argv.size() == 1) {
             job_id = stoi(argv[0]);
         }
     } catch (exception &exp) {
-        // TODO: Magic string
         throw MissingRequiredArgumentsException("bg: invalid arguments");
     }
 }
@@ -280,27 +276,28 @@ void BackgroundCommand::execute() {
         if (job_id != 0) {
             if (!job_list.getJobById(job_id)->is_stopped) {
                 throw AlreadyRunningInBackGround(
-                        "job-id " + to_string(job_id) +
+                    "job-id " + to_string(job_id) +
                         " is already running in the background");
             }
             job_command = job_list.getJobById(job_id)->cmd->getCommand();
             job_pid = job_list.getJobById(job_id)->cmd->getPid();
         } else {
             job_command =
-                    job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
+                job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid) << endl;
         job_list.getJobById(job_id)->is_stopped = false;
         if (kill(job_pid, SIGCONT) != 0) {
             job_list.getJobById(job_id)->is_stopped = true;
-            perror("smash error: kill failed");
-            return;
+            throw CommandException(string("kill failed: ") + strerror(errno));
         }
     } catch (CommandException &exp) {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
         throw ItemDoesNotExist(
-            " bg:" +
+            "bg:" +
                 error_message.substr(prompt.length(), error_message.length()));
+    } catch (exception &exp) {
+        throw exp;
     }
 }

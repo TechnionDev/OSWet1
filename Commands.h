@@ -15,7 +15,6 @@ class Command {
     virtual void execute() = 0;
     // virtual void prepare();
     // virtual void cleanup();
-    // TODO: Add your extra methods if needed
 };
 
 class BuiltInCommand : public Command {
@@ -39,7 +38,6 @@ class ExternalCommand : public Command {
 };
 
 class PipeCommand : public Command {
-    // TODO: Add your data members
    public:
     PipeCommand(std::vector<std::string> &argv);
     virtual ~PipeCommand() = default;
@@ -47,7 +45,6 @@ class PipeCommand : public Command {
 };
 
 class RedirectionCommand : public Command {
-    // TODO: Add your data members
    public:
     explicit RedirectionCommand(std::vector<std::string> &argv);
     virtual ~RedirectionCommand() = default;
@@ -76,7 +73,6 @@ class ChangeDirCommand : public BuiltInCommand {
     std::string new_dir;
 
    public:
-    // TODO: Add your data members public:
     ChangeDirCommand(std::vector<std::string> &argv);
     virtual ~ChangeDirCommand() = default;
     void execute() override;
@@ -100,7 +96,6 @@ class ShowPidCommand : public BuiltInCommand {
 };
 
 class QuitCommand : public BuiltInCommand {
-  // TODO: Add your data members public:
   bool kill_all;
  public:
   QuitCommand(std::vector<std::string> &argv);
@@ -109,7 +104,6 @@ class QuitCommand : public BuiltInCommand {
 };
 
 class JobsCommand : public BuiltInCommand {
-    // TODO: Add your data members
    public:
     JobsCommand(std::vector<std::string> &argv);
     virtual ~JobsCommand() = default;
@@ -117,7 +111,6 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class KillCommand : public BuiltInCommand {
-    // TODO: Add your data members
     int sig_num;
     int jod_id;
 
@@ -128,7 +121,6 @@ class KillCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
-    // TODO: Add your data members
     int job_id = 0;
    public:
     ForegroundCommand(std::vector<std::string> &argv);
@@ -137,7 +129,6 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
-    // TODO: Add your data members
     int job_id = 0;
    public:
     BackgroundCommand(std::vector<std::string> &argv);

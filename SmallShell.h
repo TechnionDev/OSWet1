@@ -42,7 +42,6 @@ public:
     const std::shared_ptr<ExternalCommand> &getExternalCommand() const { return cmd; }
 
     void setExternalCommand(const std::shared_ptr<ExternalCommand> &parm_cmd);
-    // TODO: add extra methods as needed
 };
 
 #endif  // OSWET1__SMALLSHELL_H_

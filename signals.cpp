@@ -38,7 +38,6 @@ void ctrlCHandler(int sig_num) {
 }
 
 void ctrlZHandler(int sig_num) {
-    // TODO: Add your implementation
 
     SmallShell *smash = &SmallShell::getInstance();
 

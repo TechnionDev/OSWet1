@@ -18,7 +18,7 @@ class JobsList {
         time_t time_inserted{};
         bool is_stopped;
         int jod_id;
-        JobEntry(std::shared_ptr<ExternalCommand> cmd = nullptr,
+        JobEntry(const std::shared_ptr<ExternalCommand>& cmd = nullptr,
                  bool isStopped = false, int job_id = 0);
     };
 

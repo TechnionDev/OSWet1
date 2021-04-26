@@ -1,20 +1,22 @@
 #include "Jobs.h"
 
-#include <signal.h>
+#include <csignal>
 
 #include <iostream>
 #include <string>
 
 #include "Constants.h"
 #include "Exceptions.h"
+
 using namespace std;
+
 void JobsList::addJob(const std::shared_ptr<ExternalCommand> &cmd,
                       bool isStopped) {
     removeFinishedJobs();
     this->max_jod_id++;
     jobs.emplace_back(new JobEntry(cmd, isStopped, this->max_jod_id));
 }
-JobsList::JobsList() : max_jod_id(0), jobs(), foreground_job(NULL) {}
+JobsList::JobsList() : max_jod_id(0), jobs(), foreground_job(nullptr) {}
 
 shared_ptr<JobsList::JobEntry> JobsList::getJobById(int job_id) {
     for (auto &it : jobs) {
@@ -30,7 +32,7 @@ void JobsList::setForegroundJob(int job_id) {
         if ((*it)->jod_id == job_id) {
             if ((*it)->jod_id == this->max_jod_id) {
                 this->max_jod_id--;  // TODO: Fix this bug. There might be
-                                     // wholes
+                // wholes
             }
             this->foreground_job = *it;
             jobs.erase(it);
@@ -79,7 +81,7 @@ void JobsList::killAllJobs() {
     for (auto it = jobs.begin(); it != jobs.end(); it++) {
         kill((*it)->cmd->getPid(), SIG_KILL);
         cout << to_string((*it)->cmd->getPid()) + ": " +
-                    (*it)->cmd->getCommand()
+            (*it)->cmd->getCommand()
              << endl;
         jobs.erase(it);
     }
@@ -95,7 +97,7 @@ bool JobsList::compare(const shared_ptr<JobEntry> first_entry,
     }
 }
 
-JobsList::JobEntry::JobEntry(std::shared_ptr<ExternalCommand> cmd,
+JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd,
                              bool isStopped, int job_id)
     : is_stopped(isStopped), jod_id(job_id) {
     if (cmd == nullptr) {
@@ -111,19 +113,19 @@ void JobsList::printJobsList() {
     for (auto &it : jobs) {
         if (it->is_stopped) {
             cout << "[" + to_string(it->jod_id) + "] " +
-                        it->cmd->getCommandName() + " : " +
-                        to_string(it->cmd->getPid()) + " " +
-                        to_string(
-                            (int)difftime(time(nullptr), it->time_inserted)) +
-                        " (stopped)";
+                it->cmd->getCommandName() + " : " +
+                to_string(it->cmd->getPid()) + " " +
+                to_string(
+                    (int) difftime(time(nullptr), it->time_inserted)) +
+                " (stopped)";
         } else {
             cout << "[" + to_string(it->jod_id) + "] " +
-                        it->cmd->getCommandName() + " : " +
-                        to_string(it->cmd->getPid()) + " " +
-                        to_string(
-                            (int)difftime(time(nullptr), it->time_inserted));
+                it->cmd->getCommandName() + " : " +
+                to_string(it->cmd->getPid()) + " " +
+                to_string(
+                    (int) difftime(time(nullptr), it->time_inserted));
         }
         cout << endl;
     }
 }
-JobsList::~JobsList() {}
+JobsList::~JobsList() = default;

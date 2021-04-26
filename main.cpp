@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <iostream>
-
 #include "SmallShell.h"
 #include "signals.h"
 
@@ -55,7 +54,7 @@ int main(int argc, char *argv[]) {
         try {
             smash.executeCommand(cmd_line);
         } catch (CommandException &exp) {
-            cout << exp.what() << endl;
+            std::cerr << exp.what() << endl;
         }
     }
     return 0;

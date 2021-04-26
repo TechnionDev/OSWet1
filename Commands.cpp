@@ -4,11 +4,9 @@
 #include <unistd.h>
 
 #include <cstring>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <vector>
 
 #include "Exceptions.h"
@@ -30,7 +28,11 @@ void ChangePromptCommand::execute() {
     SmallShell::getInstance().setPrompt(self->new_prompt);
 }
 
-CatCommand::CatCommand(vector<string> &argv) : argv(argv) {}
+CatCommand::CatCommand(vector<string> &argv) : argv(argv) {
+    if (argv.empty()) {
+        throw MissingRequiredArgumentsException("cat: not enough arguments");
+    }
+}
 
 void CatCommand::execute() {
     ifstream file;
@@ -39,7 +41,7 @@ void CatCommand::execute() {
         // TODO: Add support for piping and redirection
         file.open(it);
         if (!file.is_open()) {
-            throw FailedToOpenFileException(it + ": " + strerror(errno));
+            throw FailedToOpenFileException(string("open failed: ") + strerror(errno));
         }
 
         do {
@@ -66,6 +68,8 @@ ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
         ostringstream err_msg;
         err_msg << "Got " << argv.size() << " arguments, expected 1";
         throw MissingRequiredArgumentsException(err_msg.str());
+    } else if (argv.size() > 1) {
+        throw TooManyArgumentsException("cd: too many arguments");
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
@@ -80,16 +84,14 @@ void ChangeDirCommand::execute() {
         string curr_pwd = getPwd();
         if (chdir(self->new_dir.c_str()) != 0) {
             // Failed
-            // TODO: Maybe find a more meaningful exception
-            throw CommandException(strerror(errno));
+            throw CommandException(string("chdir failed: ") + strerror(errno));
         }
         SmallShell::getInstance().setLastDir(curr_pwd);
     } else {
         string last_pwd = getPwd();
         if (chdir(self->new_dir.c_str()) != 0) {
             // Failed
-            // TODO: Maybe find a more meaningful exception
-            throw CommandException(strerror(errno));
+            throw CommandException(string("chdir failed: ") + strerror(errno));
         }
         SmallShell::getInstance().setLastDir(last_pwd);
     }
@@ -114,12 +116,12 @@ void JobsCommand::execute() {
 KillCommand::KillCommand(vector<string> &argv) {
     try {
         if (argv[0][0] != '-' || argv.size() != 2) {
-            throw CommandNotFoundException("kill: invalid arguments");
+            throw MissingRequiredArgumentsException("kill: invalid arguments");
         }
         sig_num = stoi(argv[0].substr(1));
         jod_id = stoi(argv[1]);
     } catch (exception &exp) {
-        throw CommandNotFoundException("kill: invalid arguments");
+        throw MissingRequiredArgumentsException("kill: invalid arguments");
     }
 }
 
@@ -127,17 +129,17 @@ void KillCommand::execute() {
     pid_t res_pid;
     try {
         res_pid = SmallShell::getInstance()
-                      .getJobList()
-                      .getJobById(jod_id)
-                      ->cmd->getPid();
+            .getJobList()
+            .getJobById(jod_id)
+            ->cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
         throw exp;
     }
     if (kill(res_pid, sig_num) != 0) {
-        perror("smash error: kill failed");
+        throw CommandException(string("kill failed: ") + strerror(errno));
     }
     cout << "signal number " + to_string(sig_num) + " was sent to pid " +
-                to_string(res_pid);
+        to_string(res_pid);
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -150,7 +152,7 @@ void QuitCommand::execute() {
     if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
         cout << "smash: sending SIGKILL signal to " + to_string(size) +
-                    " jobs:";
+            " jobs:";
         SmallShell::getInstance().getJobList().killAllJobs();
     }
     exit(EXIT_SUCCESS);
@@ -171,7 +173,6 @@ void ExternalCommand::execute() {
     if (pid == 0) {
         setpgrp();
         // Forked - setup arguments
-        setpgrp();
         char **argv = new char *[4];
         argv[0] = strdup(BASH_PATH);
         argv[1] = strdup("-c");
@@ -189,8 +190,8 @@ void ExternalCommand::execute() {
             int stat = 0;
             if (waitpid(pid, &stat, WUNTRACED) < 0) {
                 throw FailedToWaitOnChild("Failed to wait for " +
-                                          to_string(pid) + " " +
-                                          strerror(errno));
+                    to_string(pid) + " " +
+                    strerror(errno));
             }
         }
         SmallShell::getInstance().getJobList().addJob(
@@ -250,7 +251,7 @@ void ForegroundCommand::execute() {
         // TODO: Magic string
         throw ItemDoesNotExist(
             " fg:" +
-            error_message.substr(prompt.length(), error_message.length()));
+                error_message.substr(prompt.length(), error_message.length()));
     }
 }
 
@@ -278,7 +279,7 @@ void BackgroundCommand::execute() {
             if (!job_list.getJobById(job_id)->is_stopped) {
                 throw AlreadyRunningInBackGround(
                     "job-id " + to_string(job_id) +
-                    " is already running in the background");
+                        " is already running in the background");
             }
             job_command = job_list.getJobById(job_id)->cmd->getCommand();
             job_pid = job_list.getJobById(job_id)->cmd->getPid();
@@ -298,6 +299,6 @@ void BackgroundCommand::execute() {
         string error_message = string(exp.what());
         throw ItemDoesNotExist(
             " bg:" +
-            error_message.substr(prompt.length(), error_message.length()));
+                error_message.substr(prompt.length(), error_message.length()));
     }
 }

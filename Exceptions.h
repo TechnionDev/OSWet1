@@ -14,6 +14,7 @@ class CommandException : public std::runtime_error {
 
 EXCEPTION(CommandNotFoundException);
 EXCEPTION(MissingRequiredArgumentsException);
+EXCEPTION(TooManyArgumentsException);
 EXCEPTION(FailedToOpenFileException);
 EXCEPTION(ItemDoesNotExist);
 EXCEPTION(ListIsEmpty);

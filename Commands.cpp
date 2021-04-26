@@ -1,9 +1,9 @@
 #include "Commands.h"
 
-#include <cstring>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -17,8 +17,6 @@
 #include "Utils.h"
 
 using namespace std;
-
-// TODO: Add your implementation for classes in Commands.h
 
 ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
     if (argv.size() == 0) {
@@ -37,7 +35,7 @@ CatCommand::CatCommand(vector<string> &argv) : argv(argv) {}
 void CatCommand::execute() {
     ifstream file;
     vector<char> buffer(1024, 0);
-    for (const auto& it : argv) {
+    for (const auto &it : argv) {
         // TODO: Add support for piping and redirection
         file.open(it);
         if (!file.is_open()) {
@@ -129,9 +127,9 @@ void KillCommand::execute() {
     pid_t res_pid;
     try {
         res_pid = SmallShell::getInstance()
-            .getJobList()
-            .getJobById(jod_id)
-            .cmd->getPid();
+                      .getJobList()
+                      .getJobById(jod_id)
+                      ->cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
         throw exp;
     }
@@ -139,7 +137,7 @@ void KillCommand::execute() {
         perror("smash error: kill failed");
     }
     cout << "signal number " + to_string(sig_num) + " was sent to pid " +
-        to_string(res_pid);
+                to_string(res_pid);
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -152,15 +150,14 @@ void QuitCommand::execute() {
     if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
         cout << "smash: sending SIGKILL signal to " + to_string(size) +
-            " jobs:";
+                    " jobs:";
         SmallShell::getInstance().getJobList().killAllJobs();
     }
     exit(EXIT_SUCCESS);
 }
 
-ExternalCommand::ExternalCommand(const string& command, bool isBackground)
+ExternalCommand::ExternalCommand(const string &command, bool isBackground)
     : pid(0), command(command), isBackground(isBackground) {
-
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }
@@ -190,13 +187,14 @@ void ExternalCommand::execute() {
         this->pid = pid;
         if (not this->isBackground) {
             int stat = 0;
-            if (waitpid(pid, &stat, 0) < 0) {
+            if (waitpid(pid, &stat, WUNTRACED) < 0) {
                 throw FailedToWaitOnChild("Failed to wait for " +
-                    to_string(pid) + " " +
-                    strerror(errno));
+                                          to_string(pid) + " " +
+                                          strerror(errno));
             }
         }
-        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), false);
+        SmallShell::getInstance().getJobList().addJob(
+            SmallShell::getInstance().getExternalCommand(), false);
     }
 }
 
@@ -208,13 +206,15 @@ pid_t ExternalCommand::getPid() const { return this->pid; }
 
 string ExternalCommand::getCommand() const { return this->command; }
 
-ForegroundCommand::ForegroundCommand(vector<std::string> &argv) {
+ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
+    : job_id(0 /* 0 means last job */) {
     try {
         if (argv.size() > 1) {
+            // TODO: Why missing? Aren't we supposed to ignore extra arguments?
             throw MissingRequiredArgumentsException("fg: invalid arguments");
         }
         if (argv.size() == 1) {
-            job_id = stoi(argv[0]);
+            this->job_id = stoi(argv[0]);
         }
     } catch (exception &exp) {
         throw MissingRequiredArgumentsException("fg: invalid arguments");
@@ -225,19 +225,21 @@ void ForegroundCommand::execute() {
     try {
         pid_t job_pid;
         string job_command;
-        JobsList &job_list = SmallShell::getInstance().getJobList();
-        if (job_id != 0) {
-            job_command = job_list.getJobById(job_id).cmd->getCommand();
-            job_pid = job_list.getJobById(job_id).cmd->getPid();
+        SmallShell &smash = SmallShell::getInstance();
+        JobsList &job_list = smash.getJobList();
+        if (this->job_id != 0) {
+            job_command = job_list.getJobById(this->job_id)->cmd->getCommand();
+            job_pid = job_list.getJobById(this->job_id)->cmd->getPid();
         } else {
-            job_command = job_list.getLastJob(&job_pid).cmd->getCommand();
+            job_command = job_list.getLastJob(&job_pid)->cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid);
         if (kill(job_pid, SIGCONT) != 0) {
             perror("smash error: kill failed");
             return;
         }
-        SmallShell::getInstance().getJobList().removeJobById(job_id);
+        smash.getJobList().setForegroundJob(this->job_id);
+
         if (waitpid(job_pid, nullptr, WUNTRACED) == -1) {
             perror("smash error: waitpid failed");
             return;
@@ -245,21 +247,24 @@ void ForegroundCommand::execute() {
     } catch (CommandException &exp) {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
+        // TODO: Magic string
         throw ItemDoesNotExist(
             " fg:" +
-                error_message.substr(prompt.length(), error_message.length()));
+            error_message.substr(prompt.length(), error_message.length()));
     }
 }
 
 BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
     try {
         if (argv.size() > 1) {
+            // TODO: Magic string
             throw MissingRequiredArgumentsException("bg: invalid arguments");
         }
         if (argv.size() == 1) {
             job_id = stoi(argv[0]);
         }
     } catch (exception &exp) {
+        // TODO: Magic string
         throw MissingRequiredArgumentsException("bg: invalid arguments");
     }
 }
@@ -270,21 +275,21 @@ void BackgroundCommand::execute() {
         pid_t job_pid;
         string job_command;
         if (job_id != 0) {
-            if (!job_list.getJobById(job_id).is_stopped) {
+            if (!job_list.getJobById(job_id)->is_stopped) {
                 throw AlreadyRunningInBackGround(
                     "job-id " + to_string(job_id) +
-                        " is already running in the background");
+                    " is already running in the background");
             }
-            job_command = job_list.getJobById(job_id).cmd->getCommand();
-            job_pid = job_list.getJobById(job_id).cmd->getPid();
+            job_command = job_list.getJobById(job_id)->cmd->getCommand();
+            job_pid = job_list.getJobById(job_id)->cmd->getPid();
         } else {
             job_command =
-                job_list.getLastStoppedJob(&job_pid).cmd->getCommand();
+                job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
         }
-        cout << job_command + " : " + to_string(job_pid);
-        job_list.getJobById(job_id).is_stopped = false;
+        cout << job_command + " : " + to_string(job_pid) << endl;
+        job_list.getJobById(job_id)->is_stopped = false;
         if (kill(job_pid, SIGCONT) != 0) {
-            job_list.getJobById(job_id).is_stopped = true;
+            job_list.getJobById(job_id)->is_stopped = true;
             perror("smash error: kill failed");
             return;
         }
@@ -293,6 +298,6 @@ void BackgroundCommand::execute() {
         string error_message = string(exp.what());
         throw ItemDoesNotExist(
             " bg:" +
-                error_message.substr(prompt.length(), error_message.length()));
+            error_message.substr(prompt.length(), error_message.length()));
     }
 }

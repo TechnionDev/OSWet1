@@ -19,5 +19,7 @@ EXCEPTION(ItemDoesNotExist);
 EXCEPTION(ListIsEmpty);
 EXCEPTION(AlreadyRunningInBackGround);
 EXCEPTION(FailedToWaitOnChild);
+EXCEPTION(FailedToResumeChild);
+EXCEPTION(NoJobProvided);
 
 #endif  // OSWET1__EXCEPTIONS_H_

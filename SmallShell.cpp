@@ -54,7 +54,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             return new_cmd;
         } catch (out_of_range &exc) {
             const shared_ptr<ExternalCommand>
-                new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
+                new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s),cmd_s));
             setExternalCommand(new_cmd);
             return new_cmd;
         }

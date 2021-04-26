@@ -161,11 +161,12 @@ void QuitCommand::execute() {
     exit(EXIT_SUCCESS);
 }
 
-ExternalCommand::ExternalCommand(const string &command, bool isBackground)
-    : pid(0), command(command), isBackground(isBackground) {
+ExternalCommand::ExternalCommand(const string &command, bool isBackground, const string &command_with_background)
+    : pid(0), command(command), isBackground(isBackground),command_with_background(command_with_background) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }
+
     /* else if (not can_exec(argv[0].c_str())) {
         throw CommandNotFoundException("Command " + argv[0] + " not found");
     } */
@@ -206,7 +207,7 @@ string ExternalCommand::getCommandName() const {
 
 pid_t ExternalCommand::getPid() const { return this->pid; }
 
-string ExternalCommand::getCommand() const { return this->command; }
+string ExternalCommand::getCommand() const { return this->command_with_background; }
 
 bool ExternalCommand::operator==(const ExternalCommand &other) const {
     if (other.isBackground == this->isBackground &&
@@ -244,7 +245,7 @@ void ForegroundCommand::execute() {
             job_command = foreground_cmd->getCommand();
             job_pid = foreground_cmd->getPid();
         } else {
-            foreground_cmd = job_list.getLastJob(&job_pid)->cmd;
+            foreground_cmd = job_list.getLastJob(&job_pid,&job_id)->cmd;
             job_command = foreground_cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid)<<endl;

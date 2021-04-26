@@ -37,7 +37,7 @@ class JobsList {
   void removeFinishedJobs();
   std::shared_ptr<JobEntry> getJobById(int jobId);
   void setForegroundJob(int jobId);
-  std::shared_ptr<JobEntry> getLastJob(int *lastJobPid);
+  std::shared_ptr<JobEntry> getLastJob(int *lastJobPid,int *lastJobId);
   std::shared_ptr<JobEntry> getLastStoppedJob(int *jobId);
   int size() { return jobs.size(); }
 };

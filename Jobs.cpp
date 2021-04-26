@@ -42,11 +42,12 @@ void JobsList::setForegroundJob(int job_id) {
     throw ItemDoesNotExist("job-id " + to_string(job_id) + " does not exist");
 }
 
-shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid) {
+shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid,int *lastJobId) {
     if (jobs.empty()) {
         throw ListIsEmpty("jobs list is empty");
     }
     *lastJobPid = jobs.back()->cmd->getPid();
+    *lastJobId = jobs.back()->jod_id;
     return jobs.back();
 }
 
@@ -107,23 +108,23 @@ void JobsList::printJobsList() {
     for (auto &it : jobs) {
         if (it->is_stopped) {
             cout << "[" + to_string(it->jod_id) + "] " +
-                it->cmd->getCommandName() + " : " +
+                it->cmd->getCommand() + " : " +
                 to_string(it->cmd->getPid()) + " " +
                 to_string(
-                    (int) difftime(time(nullptr), it->time_inserted)) +
-                " (stopped)"<<endl;
+                    (int) difftime(time(nullptr), it->time_inserted)) + " secs" +
+                " (stopped)" << endl;
         } else {
             cout << "[" + to_string(it->jod_id) + "] " +
-                it->cmd->getCommandName() + " : " +
+                it->cmd->getCommand() + " : " +
                 to_string(it->cmd->getPid()) + " " +
                 to_string(
-                    (int) difftime(time(nullptr), it->time_inserted));
+                    (int) difftime(time(nullptr), it->time_inserted))+ " secs";
         }
         cout << endl;
     }
 }
-bool JobsList::isJobEntryExits(shared_ptr<ExternalCommand> parm_cmd    ) {
-    if(getJobEntryExits(parm_cmd)){
+bool JobsList::isJobEntryExits(shared_ptr<ExternalCommand> parm_cmd) {
+    if (getJobEntryExits(parm_cmd)) {
         return true;
     }
     return false;

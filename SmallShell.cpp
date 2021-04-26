@@ -1,23 +1,13 @@
 #include "SmallShell.h"
-
-#include <signal.h>
-#include <string.h>
-#include <sys/wait.h>
 #include <unistd.h>
-
-#include <fstream>
-#include <iomanip>
-#include <iostream>
 #include <map>
-#include <sstream>
 #include <vector>
-
 #include "Utils.h"
 
 using namespace std;
 
 typedef enum {
-    kCommandCtor
+  kCommandCtor
 } CommandMapKey;
 
 typedef shared_ptr<Command> (*CommandCtorWrapperFuncPtr)(vector<string>);
@@ -28,17 +18,17 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 }
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
-        {"chprompt", &constructorWrapper<ChangePromptCommand>},
-        {"showpid",  &constructorWrapper<ShowPidCommand>},
-        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
-        {"cd",       &constructorWrapper<ChangeDirCommand>},
-        {"jobs",     &constructorWrapper<JobsCommand>},
-        {"kill",     &constructorWrapper<KillCommand>},
-        {"fg",       &constructorWrapper<ForegroundCommand>},
-        {"bg",       &constructorWrapper<BackgroundCommand>},
-        {"quit",     &constructorWrapper<QuitCommand>},
-        {"cat",      &constructorWrapper<CatCommand>}
-        /* Add more commands here */
+    {"chprompt", &constructorWrapper<ChangePromptCommand>},
+    {"showpid", &constructorWrapper<ShowPidCommand>},
+    {"pwd", &constructorWrapper<GetCurrDirCommand>},
+    {"cd", &constructorWrapper<ChangeDirCommand>},
+    {"jobs", &constructorWrapper<JobsCommand>},
+    {"kill", &constructorWrapper<KillCommand>},
+    {"fg", &constructorWrapper<ForegroundCommand>},
+    {"bg", &constructorWrapper<BackgroundCommand>},
+    {"quit", &constructorWrapper<QuitCommand>},
+    {"cat", &constructorWrapper<CatCommand>}
+    /* Add more commands here */
 };
 
 SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
@@ -55,17 +45,18 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     string no_background_cmd = removeBackgroundSign(cmd_s);
     // Remove background sign, trim (part of remove background) and split
     vector<string> argv = split(no_background_cmd);
-    if (argv.size() == 0) {
+    if (argv.empty()) {
         return shared_ptr<Command>(new NopCommand());
     } else {
         try {
-            shared_ptr<Command> cmd =
-                    commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
-            return cmd;
+            shared_ptr<Command> new_cmd =
+                commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
+            return new_cmd;
         } catch (out_of_range &exc) {
-            const shared_ptr<ExternalCommand> cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
-            setExternalCommand(cmd);
-            return cmd;
+            const shared_ptr<ExternalCommand>
+                new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s)));
+            setExternalCommand(new_cmd);
+            return new_cmd;
         }
     }
 }
@@ -87,14 +78,13 @@ void SmallShell::executeCommand(string cmd_line) {
 //    }
 
     if (get<0>(cmd_tuple) == NORMAL) {
-        shared_ptr<Command> cmd = createCommand(cmd_line);
-        // TODO: Handle external isBackground (maybe handle in execute for prettier
-        // handling)
-        cmd->execute();
+        shared_ptr<Command> cmd_new = createCommand(cmd_line);
+        // TODO: Handle external isBackground (maybe handle in execute for prettier handling)
+        cmd_new->execute();
         this->cmd = nullptr;
     } else {
         shared_ptr<Command> cmd1 = createCommand(get<1>(cmd_tuple)),
-                cmd2 = createCommand(get<2>(cmd_tuple));
+            cmd2 = createCommand(get<2>(cmd_tuple));
 
     }
 }
@@ -107,6 +97,6 @@ std::string SmallShell::getLastDir() const { return self->last_dir; }
 
 void SmallShell::setLastDir(std::string new_dir) { self->last_dir = new_dir; }
 
-void SmallShell::setExternalCommand(const shared_ptr<ExternalCommand> &parm_cmd) {
+void SmallShell::setExternalCommand(shared_ptr<ExternalCommand> parm_cmd) {
     this->cmd = parm_cmd;
 }

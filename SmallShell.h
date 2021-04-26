@@ -39,9 +39,9 @@ public:
 
     void executeCommand(std::string cmd_line);
 
-    const std::shared_ptr<ExternalCommand> &getExternalCommand() const { return cmd; }
+    std::shared_ptr<ExternalCommand> getExternalCommand() { return cmd; }
 
-    void setExternalCommand(const std::shared_ptr<ExternalCommand> &parm_cmd);
+    void setExternalCommand(std::shared_ptr<ExternalCommand> parm_cmd);
 };
 
 #endif  // OSWET1__SMALLSHELL_H_

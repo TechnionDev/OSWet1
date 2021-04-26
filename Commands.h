@@ -30,6 +30,7 @@ class ExternalCommand : public Command {
 
    public:
     ExternalCommand(const std::string& command, bool isBackground);
+    bool operator==(ExternalCommand const &other_cmd) const;
     virtual ~ExternalCommand() = default;
     void execute() override;
     std::string getCommand() const;

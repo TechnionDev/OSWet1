@@ -39,20 +39,21 @@ void ctrlCHandler(int sig_num) {
 
 void ctrlZHandler(int sig_num) {
 
-    SmallShell *smash = &SmallShell::getInstance();
+//    SmallShell *smash = &SmallShell::getInstance();
 
-    cout << "smash: got ctrl-Z" << smash->getExternalCommand() << endl;
+    cout << "smash: got ctrl-Z" << endl;
 
-    if (smash->getExternalCommand() != nullptr) {
-        pid_t curr_pid = smash->getExternalCommand()->getPid();
-
+    if (SmallShell::getInstance().getExternalCommand() != nullptr) {
+        pid_t curr_pid = SmallShell::getInstance().getExternalCommand()->getPid();
         if (kill(curr_pid, SIGSTOP) != 0) {
             perror("smash error: kill failed");
             return;
         }
-        // TODO: Replace cout << with write() directly
-        smash->getJobList().addJob(smash->getExternalCommand(), true);
+        //TODO: Replace cout << with write() directly
+        if (SmallShell::getInstance().getExternalCommand() == nullptr) { cout << "null" << endl; }
+        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), true);
         cout << "smash: process " + to_string(curr_pid) + " was stopped";
+        //smash->setExternalCommand(nullptr);
     }
 }
 

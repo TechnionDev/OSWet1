@@ -45,7 +45,7 @@ void CatCommand::execute() {
         }
 
         do {
-            buffer.empty();
+            memset(buffer.data(), 0, buffer.size());
             file.read(buffer.data(), buffer.size());
             if (file.gcount() == 0) {
                 break;
@@ -159,7 +159,7 @@ void QuitCommand::execute() {
 }
 
 ExternalCommand::ExternalCommand(const string &command, bool isBackground)
-    : pid(0), command(command), isBackground(isBackground) {
+        : pid(0), command(command), isBackground(isBackground) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }
@@ -195,7 +195,7 @@ void ExternalCommand::execute() {
             }
         }
         SmallShell::getInstance().getJobList().addJob(
-            SmallShell::getInstance().getExternalCommand(), false);
+                SmallShell::getInstance().getExternalCommand(), false);
     }
 }
 
@@ -208,18 +208,20 @@ pid_t ExternalCommand::getPid() const { return this->pid; }
 string ExternalCommand::getCommand() const { return this->command; }
 
 ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
-    : job_id(0 /* 0 means last job */) {
-    try {
-        if (argv.size() > 1) {
-            // TODO: Why missing? Aren't we supposed to ignore extra arguments?
-            throw MissingRequiredArgumentsException("fg: invalid arguments");
-        }
-        if (argv.size() == 1) {
-            this->job_id = stoi(argv[0]);
-        }
-    } catch (exception &exp) {
+        : job_id(0 /* 0 means last job */) {
+    if (argv.size() > 1) {
         throw MissingRequiredArgumentsException("fg: invalid arguments");
     }
+    if (argv.size() == 1) {
+        try {
+            this->job_id = stoi(argv[0]);
+        } catch (invalid_argument &exp) {
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        } catch (out_of_range &exp){
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        }
+    }
+
 }
 
 void ForegroundCommand::execute() {
@@ -246,12 +248,12 @@ void ForegroundCommand::execute() {
             return;
         }
     } catch (CommandException &exp) {
-        string prompt = ERR_PREFIX;
+        string err_prefix = ERR_PREFIX;
         string error_message = string(exp.what());
         // TODO: Magic string
         throw ItemDoesNotExist(
             " fg:" +
-                error_message.substr(prompt.length(), error_message.length()));
+                error_message.substr(err_prefix.length(), error_message.length()));
     }
 }
 
@@ -278,14 +280,14 @@ void BackgroundCommand::execute() {
         if (job_id != 0) {
             if (!job_list.getJobById(job_id)->is_stopped) {
                 throw AlreadyRunningInBackGround(
-                    "job-id " + to_string(job_id) +
+                        "job-id " + to_string(job_id) +
                         " is already running in the background");
             }
             job_command = job_list.getJobById(job_id)->cmd->getCommand();
             job_pid = job_list.getJobById(job_id)->cmd->getPid();
         } else {
             job_command =
-                job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
+                    job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
         }
         cout << job_command + " : " + to_string(job_pid) << endl;
         job_list.getJobById(job_id)->is_stopped = false;

@@ -11,7 +11,7 @@
 class ExternalCommand;
 
 class JobsList {
-   public:
+   private:
     class JobEntry {
        public:
         std::shared_ptr<ExternalCommand> cmd;
@@ -22,7 +22,6 @@ class JobsList {
                  bool isStopped = false, int job_id = 0);
     };
 
-   private:
     // TODO: Add your data members
     int max_jod_id;
     std::list<std::shared_ptr<JobEntry>> jobs;

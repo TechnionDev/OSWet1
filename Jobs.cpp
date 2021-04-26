@@ -111,7 +111,7 @@ void JobsList::printJobsList() {
                 to_string(it->cmd->getPid()) + " " +
                 to_string(
                     (int) difftime(time(nullptr), it->time_inserted)) +
-                " (stopped)";
+                " (stopped)"<<endl;
         } else {
             cout << "[" + to_string(it->jod_id) + "] " +
                 it->cmd->getCommandName() + " : " +

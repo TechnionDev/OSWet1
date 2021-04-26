@@ -142,7 +142,7 @@ void KillCommand::execute() {
         throw CommandException(string("kill failed: ") + strerror(errno));
     }
     cout << "signal number " + to_string(sig_num) + " was sent to pid " +
-        to_string(res_pid);
+        to_string(res_pid)<<endl;
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -155,7 +155,7 @@ void QuitCommand::execute() {
     if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
         cout << "smash: sending SIGKILL signal to " + to_string(size) +
-            " jobs:";
+            " jobs:"<<endl;
         SmallShell::getInstance().getJobList().killAllJobs();
     }
     exit(EXIT_SUCCESS);

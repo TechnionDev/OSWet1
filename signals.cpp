@@ -50,9 +50,8 @@ void ctrlZHandler(int sig_num) {
             return;
         }
         //TODO: Replace cout << with write() directly
-        if (SmallShell::getInstance().getExternalCommand() == nullptr) { cout << "null" << endl; }
         SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), true);
-        cout << "smash: process " + to_string(curr_pid) + " was stopped";
+        cout << "smash: process " + to_string(curr_pid) + " was stopped"<<endl;
         //smash->setExternalCommand(nullptr);
     }
 }

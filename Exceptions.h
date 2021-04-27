@@ -21,5 +21,6 @@ EXCEPTION(AlreadyRunningInBackGround);
 EXCEPTION(FailedToWaitOnChild);
 EXCEPTION(FailedToResumeChild);
 EXCEPTION(NoJobProvided);
+EXCEPTION(SyscallException);
 
 #endif  // OSWET1__EXCEPTIONS_H_

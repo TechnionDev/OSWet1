@@ -1,5 +1,6 @@
 #include "SmallShell.h"
 
+#include <stdio.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
@@ -72,30 +73,93 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
 
 void SmallShell::executeCommand(string cmd_line) {
     auto cmd_tuple = splitPipeRedirect(cmd_line);
-    int fds[2] = {0};
-    int old_fds[2] = {STDIN_FILENO, STDIN_FILENO};
-    // Switch on the type of command
-//    switch (cmd_tuple[0]) {
-//        case PIPE:
-//            auto cmd1 = this->createCommand(cmd_tuple[1]);
-//            auto cmd2 = this->createCommand(cmd_tuple[2]);
-//            dup
-//            break;
-//
-//        default:
-//
-//    }
 
     if (get<0>(cmd_tuple) == NORMAL) {
         shared_ptr<Command> cmd = createCommand(cmd_line);
-        // TODO: Handle external isBackground (maybe handle in execute for prettier
+        // TODO: Handle external isBackground (maybe handle9 in execute for prettier
         // handling)
         cmd->execute();
         this->cmd = nullptr;
     } else {
-        shared_ptr<Command> cmd1 = createCommand(get<1>(cmd_tuple)),
-                cmd2 = createCommand(get<2>(cmd_tuple));
+        int fds[2] = {0};
+        int pid1, pid2;
+        if(pipe(fds) != 0){
+            throw SyscallException(string("pipe failed") + strerror(errno));
+        }
+        shared_ptr<Command> cmd1, cmd2;
+        // Switch on the type of command
+        switch (get<0>(cmd_tuple)) {
+            case PIPE:
+                cmd1 = this->createCommand(get<1>(cmd_tuple));
+                cmd2 = this->createCommand(get<2>(cmd_tuple));
+                // Run first command
+                if ((pid1 = fork()) == 0) {
+                    // Child
+                    dup2(fds[1], STDOUT_FILENO);
+                    close(fds[0]);
+                    close(fds[1]);
+                    try {
+                        cmd1->execute();
+                    } catch (CommandException &exp) {
+                        cerr << exp.what() << endl;
+                        exit(1);
+                    }
+                    exit(0);
+                }
+                if ((pid2 = fork()) == 0) {
+                    // Child
+                    dup2(fds[0], STDIN_FILENO);
+                    close(fds[0]);
+                    close(fds[1]);
+                    try {
+                        cmd2->execute();
+                    } catch (CommandException &exp) {
+                        cerr << exp.what() << endl;
+                        exit(1);
+                    }
+                    exit(0);
+                }
+                // We don't need those fds, only used by children
+                close(fds[0]);
+                close(fds[1]);
+                int stat;
+                if (waitpid(pid1, &stat, WUNTRACED) < 0) {
+                    throw FailedToWaitOnChild("Failed to wait for " +
+                                              to_string(pid1) + " " +
+                                              strerror(errno));
+                } else if (waitpid(pid2, &stat, 0) < 0) {
+                    throw FailedToWaitOnChild("Failed to wait for " +
+                                              to_string(pid2) + " " +
+                                              strerror(errno));
+                }
+                break;
+            case PIPE_ERR:
+                cmd1 = dynamic_pointer_cast<ExternalCommand>(this->createCommand(get<1>(cmd_tuple)));
+                cmd2 = dynamic_pointer_cast<ExternalCommand>(this->createCommand(get<2>(cmd_tuple)));
+                // Run first command
+                if ((pid1 = fork()) == 0) {
+                    // Child
+                    dup2(fds[0], STDERR_FILENO);
+                    // We don't need the pipe anymore
+                    close(fds[0]);
+                    close(fds[1]);
+                    cmd1->execute();
+                }
+                if ((pid2 = fork()) == 0) {
+                    // Child
+                    dup2(fds[1], STDIN_FILENO);
+                    // We don't need the pipe anymore
+                    close(fds[0]);
+                    close(fds[1]);
+                    cmd2->execute();
+                }
 
+                waitpid(pid1, NULL, WUNTRACED);
+                waitpid(pid2, NULL, WUNTRACED);
+                break;
+        }
+        close(fds[0]);
+        close(fds[1]);
     }
 }
 

@@ -38,11 +38,12 @@ tuple<CommandType, string, string> splitPipeRedirect(const string &str) {
         auto pos = str.find(delim_type.first);
         if (pos != string::npos) {
             return tuple<CommandType, string, string>(delim_type.second,
-                                                      str.substr(0, pos),
-                                                      str.substr(pos + delim_type.first.length()));
+                                                      removeBackgroundSign(str.substr(0, pos)),
+                                                      removeBackgroundSign(
+                                                              str.substr(pos + delim_type.first.length())));
         }
-        return tuple<CommandType, string, string>(NORMAL, str, "");
     }
+    return tuple<CommandType, string, string>(NORMAL, str, "");
 }
 
 vector<string> split(const string &str) {

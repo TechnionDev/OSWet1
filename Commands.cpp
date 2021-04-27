@@ -169,32 +169,28 @@ ExternalCommand::ExternalCommand(const string &command, bool isBackground)
 void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) {
-        setpgrp();
         // Forked - setup arguments
         setpgrp();
-        char **argv = new char *[4];
-        argv[0] = strdup(BASH_PATH);
-        argv[1] = strdup("-c");
-        argv[2] = strdup(this->command.c_str());
-        argv[3] = NULL;
-
+        cout << "test";
         // Replace with the target process image
-        execvp(argv[0], argv);
+        execlp(BASH_PATH, BASH_PATH, "-c", this->command.c_str(), NULL);
         // If we're here, then something failed
         perror(this->command.c_str());
         return;
     } else {
         this->pid = pid;
-        if (not this->isBackground) {
+        // Either put in jobslist, or waitpid for the process to finish
+        if (this->isBackground) {
+            SmallShell::getInstance().getJobList().addJob(
+                    SmallShell::getInstance().getExternalCommand(), false);
+        } else {
             int stat = 0;
             if (waitpid(pid, &stat, WUNTRACED) < 0) {
-                throw FailedToWaitOnChild("Failed to wait for " +
+                throw FailedToWaitOnChild("waitpid failed for " +
                                           to_string(pid) + " " +
                                           strerror(errno));
             }
         }
-        SmallShell::getInstance().getJobList().addJob(
-                SmallShell::getInstance().getExternalCommand(), false);
     }
 }
 
@@ -216,7 +212,7 @@ ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
             this->job_id = stoi(argv[0]);
         } catch (invalid_argument &exp) {
             throw MissingRequiredArgumentsException("fg: invalid arguments");
-        } catch (out_of_range &exp){
+        } catch (out_of_range &exp) {
             throw MissingRequiredArgumentsException("fg: invalid arguments");
         }
     }

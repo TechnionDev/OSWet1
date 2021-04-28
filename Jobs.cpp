@@ -62,6 +62,7 @@ shared_ptr<JobsList::JobEntry> JobsList::getLastStoppedJob(int *job_id) {
 }
 
 void JobsList::removeFinishedJobs() {
+    jobs.sort(rcompare);
     for (auto it = jobs.begin(); it != jobs.end(); it++) {
         if (waitpid((*it)->cmd->getPid(), nullptr, WNOHANG) != 0) {
             if ((*it)->jod_id == max_jod_id) {
@@ -83,16 +84,24 @@ void JobsList::killAllJobs() {
     max_jod_id = 0;
 }
 
-bool JobsList::compare(const shared_ptr<JobEntry> first_entry,
-                       const shared_ptr<JobEntry> second_entry) {
+bool JobsList::compare(shared_ptr<JobEntry> first_entry,
+                       shared_ptr<JobEntry> second_entry) {
     if (first_entry->jod_id < second_entry->jod_id) {
         return true;
     } else {
         return false;
     }
 }
+bool JobsList::rcompare(shared_ptr<JobEntry> first_entry,
+                       shared_ptr<JobEntry> second_entry) {
+    if (first_entry->jod_id > second_entry->jod_id) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
-JobsList::JobEntry::JobEntry(const std::shared_ptr<ExternalCommand> &cmd,
+JobsList::JobEntry::JobEntry(std::shared_ptr<ExternalCommand> cmd,
                              bool isStopped, int job_id)
     : is_stopped(isStopped), jod_id(job_id) {
     if (cmd == nullptr) {

@@ -112,10 +112,9 @@ JobsCommand::JobsCommand(vector<std::string> &argv) {}
 void JobsCommand::execute() {
     SmallShell::getInstance().getJobList().printJobsList();
 }
-
 KillCommand::KillCommand(vector<string> &argv) {
     try {
-        if(argv.size()!=2){
+        if (argv.size() != 2) {
             throw MissingRequiredArgumentsException("kill: invalid arguments");
         }
         if (argv[0][0] != '-' || argv.size() != 2) {
@@ -123,6 +122,9 @@ KillCommand::KillCommand(vector<string> &argv) {
         }
         sig_num = stoi(argv[0].substr(1));
         jod_id = stoi(argv[1]);
+        if (sig_num <= 0 || jod_id <= 0) {
+            throw MissingRequiredArgumentsException("kill: invalid arguments");
+        }
     } catch (exception &exp) {
         throw MissingRequiredArgumentsException("kill: invalid arguments");
     }
@@ -131,18 +133,17 @@ KillCommand::KillCommand(vector<string> &argv) {
 void KillCommand::execute() {
     pid_t res_pid;
     try {
-        res_pid = SmallShell::getInstance()
-            .getJobList()
-            .getJobById(jod_id)
-            ->cmd->getPid();
+        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id)->cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
-        throw exp;
+        string prompt = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist("kill:" + error_message.substr(prompt.length(), error_message.length()));
     }
     if (kill(res_pid, sig_num) != 0) {
         throw CommandException(string("kill failed: ") + strerror(errno));
     }
-    cout << "signal number " + to_string(sig_num) + " was sent to pid " +
-        to_string(res_pid)<<endl;
+    cout << "signal number " + to_string(sig_num) + " was sent to pid " + to_string(res_pid) << endl;
+    SmallShell::getInstance().getJobList().removeFinishedJobs();
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) {
@@ -155,14 +156,14 @@ void QuitCommand::execute() {
     if (this->kill_all) {
         int size = SmallShell::getInstance().getJobList().size();
         cout << "smash: sending SIGKILL signal to " + to_string(size) +
-            " jobs:"<<endl;
+            " jobs:" << endl;
         SmallShell::getInstance().getJobList().killAllJobs();
     }
     exit(EXIT_SUCCESS);
 }
 
 ExternalCommand::ExternalCommand(const string &command, bool isBackground, const string &command_with_background)
-    : pid(0), command(command), isBackground(isBackground),command_with_background(command_with_background) {
+    : pid(0), command(command), isBackground(isBackground), command_with_background(command_with_background) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }
@@ -245,10 +246,10 @@ void ForegroundCommand::execute() {
             job_command = foreground_cmd->getCommand();
             job_pid = foreground_cmd->getPid();
         } else {
-            foreground_cmd = job_list.getLastJob(&job_pid,&job_id)->cmd;
+            foreground_cmd = job_list.getLastJob(&job_pid, &job_id)->cmd;
             job_command = foreground_cmd->getCommand();
         }
-        cout << job_command + " : " + to_string(job_pid)<<endl;
+        cout << job_command + " : " + to_string(job_pid) << endl;
         if (kill(job_pid, SIGCONT) != 0) {
             throw CommandException(string("kill failed: ") + strerror(errno));
         }

@@ -11,7 +11,7 @@ using namespace std;
 
 void ctrlCHandler(int sig_num) {
     // cout << "smash: got ctrl-C" << endl;  //  TODO: Remove call
-    write(STDOUT_FILENO, "got CTRL-C\n", strlen("got CTRL-C\n"));
+    write(STDOUT_FILENO, "got ctrl-C\n", strlen("got ctrl-C\n"));
 
     shared_ptr<ExternalCommand> fg_cmd =
         SmallShell::getInstance().getExternalCommand();

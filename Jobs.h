@@ -17,14 +17,14 @@ class JobsList {
     time_t time_inserted{};
     bool is_stopped;
     int jod_id;
-    JobEntry(const std::shared_ptr<ExternalCommand> &cmd = nullptr,
+    JobEntry(std::shared_ptr<ExternalCommand> cmd = nullptr,
              bool isStopped = false, int job_id = 0);
   };
 
   int max_jod_id;
   std::list<std::shared_ptr<JobEntry>> jobs;
-  static bool compare(std::shared_ptr<JobEntry> first_entry,
-                      std::shared_ptr<JobEntry> second_entry);
+  static bool compare(std::shared_ptr<JobEntry> first_entry,std::shared_ptr<JobEntry> second_entry);
+  static bool rcompare(std::shared_ptr<JobEntry> first_entry,std::shared_ptr<JobEntry> second_entry);
   bool isJobEntryExits(std::shared_ptr<ExternalCommand> parm_cmd);
   std::shared_ptr<JobEntry> getJobEntryExits(std::shared_ptr<ExternalCommand> parm_cmd);
  public:

@@ -46,6 +46,7 @@ shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid, int *lastJo
     if (jobs.empty()) {
         throw ListIsEmpty("jobs list is empty");
     }
+    this->jobs.sort(compare);
     *lastJobPid = jobs.back()->cmd->getPid();
     *lastJobId = jobs.back()->jod_id;
     return jobs.back();

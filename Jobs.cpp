@@ -42,7 +42,7 @@ void JobsList::setForegroundJob(int job_id) {
     throw ItemDoesNotExist("job-id " + to_string(job_id) + " does not exist");
 }
 
-shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid,int *lastJobId) {
+shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid, int *lastJobId) {
     if (jobs.empty()) {
         throw ListIsEmpty("jobs list is empty");
     }
@@ -65,10 +65,14 @@ void JobsList::removeFinishedJobs() {
     jobs.sort(rcompare);
     for (auto it = jobs.begin(); it != jobs.end(); it++) {
         if (waitpid((*it)->cmd->getPid(), nullptr, WNOHANG) != 0) {
-            if ((*it)->jod_id == max_jod_id) {
-                max_jod_id--;
-            }
             jobs.erase(it);
+        }
+    }
+    // set current max_job_id
+    this->max_jod_id = 0;
+    for (auto & job : jobs) {
+        if (job->jod_id > (this->max_jod_id)) {
+            this->max_jod_id = job->jod_id;
         }
     }
 }
@@ -93,7 +97,7 @@ bool JobsList::compare(shared_ptr<JobEntry> first_entry,
     }
 }
 bool JobsList::rcompare(shared_ptr<JobEntry> first_entry,
-                       shared_ptr<JobEntry> second_entry) {
+                        shared_ptr<JobEntry> second_entry) {
     if (first_entry->jod_id > second_entry->jod_id) {
         return true;
     } else {
@@ -127,7 +131,7 @@ void JobsList::printJobsList() {
                 it->cmd->getCommand() + " : " +
                 to_string(it->cmd->getPid()) + " " +
                 to_string(
-                    (int) difftime(time(nullptr), it->time_inserted))+ " secs";
+                    (int) difftime(time(nullptr), it->time_inserted)) + " secs";
         }
         cout << endl;
     }

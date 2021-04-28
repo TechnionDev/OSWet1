@@ -20,11 +20,11 @@ class JobsList {
     JobEntry(std::shared_ptr<ExternalCommand> cmd = nullptr,
              bool isStopped = false, int job_id = 0);
   };
-
+  std::shared_ptr<JobEntry> last_stopped_job = nullptr;
   int max_jod_id;
   std::list<std::shared_ptr<JobEntry>> jobs;
-  static bool compare(std::shared_ptr<JobEntry> first_entry,std::shared_ptr<JobEntry> second_entry);
-  static bool rcompare(std::shared_ptr<JobEntry> first_entry,std::shared_ptr<JobEntry> second_entry);
+  static bool compare(std::shared_ptr<JobEntry> first_entry, std::shared_ptr<JobEntry> second_entry);
+  static bool rcompare(std::shared_ptr<JobEntry> first_entry, std::shared_ptr<JobEntry> second_entry);
   bool isJobEntryExits(std::shared_ptr<ExternalCommand> parm_cmd);
   std::shared_ptr<JobEntry> getJobEntryExits(std::shared_ptr<ExternalCommand> parm_cmd);
  public:
@@ -37,7 +37,7 @@ class JobsList {
   void removeFinishedJobs();
   std::shared_ptr<JobEntry> getJobById(int jobId);
   void setForegroundJob(int jobId);
-  std::shared_ptr<JobEntry> getLastJob(int *lastJobPid,int *lastJobId);
+  std::shared_ptr<JobEntry> getLastJob(int *lastJobPid, int *lastJobId);
   std::shared_ptr<JobEntry> getLastStoppedJob(int *jobId);
   int size() { return jobs.size(); }
 };

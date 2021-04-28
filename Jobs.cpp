@@ -10,10 +10,11 @@ using namespace std;
 
 void JobsList::addJob(std::shared_ptr<ExternalCommand> new_cmd, bool isStopped) {
     if (isJobEntryExits(new_cmd)) {
-        shared_ptr<JobEntry> res_cmd = getJobEntryExits(new_cmd);
         //can be entered only through CTRL_Z
+        shared_ptr<JobEntry> res_cmd = getJobEntryExits(new_cmd);
         time(&(res_cmd->time_inserted));
         res_cmd->is_stopped = true;
+        this->last_stopped_job = res_cmd;
         return;
     }
     removeFinishedJobs();
@@ -52,14 +53,12 @@ shared_ptr<JobsList::JobEntry> JobsList::getLastJob(int *lastJobPid, int *lastJo
     return jobs.back();
 }
 
-shared_ptr<JobsList::JobEntry> JobsList::getLastStoppedJob(int *job_id) {
-    for (auto it = jobs.rbegin(); it != jobs.rend(); ++it) {
-        if ((*it)->is_stopped) {
-            *job_id = (*it)->jod_id;
-            return (*it);
-        }
+shared_ptr<JobsList::JobEntry> JobsList::getLastStoppedJob(int *jobId) {
+    if (last_stopped_job == nullptr) {
+        throw ItemDoesNotExist("there is no stopped jobs to resume");
     }
-    throw ItemDoesNotExist("there is no stopped jobs to resume");
+    *jobId = this->last_stopped_job->jod_id;
+    return this->last_stopped_job;
 }
 
 void JobsList::removeFinishedJobs() {
@@ -71,7 +70,7 @@ void JobsList::removeFinishedJobs() {
     }
     // set current max_job_id
     this->max_jod_id = 0;
-    for (auto & job : jobs) {
+    for (auto &job : jobs) {
         if (job->jod_id > (this->max_jod_id)) {
             this->max_jod_id = job->jod_id;
         }

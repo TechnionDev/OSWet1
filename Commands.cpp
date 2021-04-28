@@ -287,23 +287,24 @@ BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
 void BackgroundCommand::execute() {
     try {
         JobsList &job_list = SmallShell::getInstance().getJobList();
-        pid_t job_pid;
+        pid_t job_pid = 0;
         string job_command;
-        if (job_id != 0) {
-            if (!job_list.getJobById(job_id)->is_stopped) {
+        if (this->job_id != 0) {
+            if (!job_list.getJobById(this->job_id)->is_stopped) {
                 throw AlreadyRunningInBackGround(
-                    "job-id " + to_string(job_id) + " is already running in the background");
+                    "job-id " + to_string(this->job_id) + " is already running in the background");
             }
-            job_command = job_list.getJobById(job_id)->cmd->getCommand();
-            job_pid = job_list.getJobById(job_id)->cmd->getPid();
+            job_command = job_list.getJobById(this->job_id)->cmd->getCommand();
+            job_pid = job_list.getJobById(this->job_id)->cmd->getPid();
         } else {
             job_command =
-                job_list.getLastStoppedJob(&job_pid)->cmd->getCommand();
+                job_list.getLastStoppedJob(&(this->job_id))->cmd->getCommand();
+            job_pid = job_list.getLastStoppedJob(&(this->job_id))->cmd->getPid();
         }
         cout << job_command + " : " + to_string(job_pid) << endl;
-        job_list.getJobById(job_id)->is_stopped = false;
+        job_list.getJobById(this->job_id)->is_stopped = false;
         if (kill(job_pid, SIGCONT) != 0) {
-            job_list.getJobById(job_id)->is_stopped = true;
+            job_list.getJobById(this->job_id)->is_stopped = true;
             throw CommandException(string("kill failed: ") + strerror(errno));
         }
     } catch (CommandException &exp) {

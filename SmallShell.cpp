@@ -13,7 +13,7 @@
 using namespace std;
 
 typedef enum {
-  kCommandCtor
+    kCommandCtor
 } CommandMapKey;
 
 typedef shared_ptr<Command> (*CommandCtorWrapperFuncPtr)(vector<string>);
@@ -24,17 +24,17 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 }
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
-    {"chprompt", &constructorWrapper<ChangePromptCommand>},
-    {"showpid", &constructorWrapper<ShowPidCommand>},
-    {"pwd", &constructorWrapper<GetCurrDirCommand>},
-    {"cd", &constructorWrapper<ChangeDirCommand>},
-    {"jobs", &constructorWrapper<JobsCommand>},
-    {"kill", &constructorWrapper<KillCommand>},
-    {"fg", &constructorWrapper<ForegroundCommand>},
-    {"bg", &constructorWrapper<BackgroundCommand>},
-    {"quit", &constructorWrapper<QuitCommand>},
-    {"cat", &constructorWrapper<CatCommand>}
-    /* Add more commands here */
+        {"chprompt", &constructorWrapper<ChangePromptCommand>},
+        {"showpid",  &constructorWrapper<ShowPidCommand>},
+        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
+        {"cd",       &constructorWrapper<ChangeDirCommand>},
+        {"jobs",     &constructorWrapper<JobsCommand>},
+        {"kill",     &constructorWrapper<KillCommand>},
+        {"fg",       &constructorWrapper<ForegroundCommand>},
+        {"bg",       &constructorWrapper<BackgroundCommand>},
+        {"quit",     &constructorWrapper<QuitCommand>},
+        {"cat",      &constructorWrapper<CatCommand>}
+        /* Add more commands here */
 };
 
 SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
@@ -56,11 +56,11 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     } else {
         try {
             shared_ptr<Command> new_cmd =
-                commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
+                    commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
             return new_cmd;
         } catch (out_of_range &exc) {
             const shared_ptr<ExternalCommand>
-                new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s),cmd_s));
+                    new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s), cmd_s));
             setExternalCommand(new_cmd);
             return new_cmd;
         }
@@ -80,7 +80,7 @@ void SmallShell::executeCommand(string cmd_line) {
         vector<int> fd_to_close;
         int fds[2] = {0};
         int pid1, pid2;
-        int proc1_stdout = -1, proc1_stderr = -1, proc2_stdout = -1;
+        int proc1_stdin = -1, proc1_stdout = -1, proc1_stderr = -1, proc2_stdout = -1;
 
         if (pipe(fds) != 0) {
             throw SyscallException(string("pipe failed") + strerror(errno));
@@ -92,9 +92,16 @@ void SmallShell::executeCommand(string cmd_line) {
         shared_ptr<Command> cmd1 = nullptr, cmd2 = nullptr;
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
+            case IN_RD:
+                proc1_stdin = fileno(fopen(get<2>(cmd_tuple).c_str(), "r"));
+                if (proc1_stdin < 0) {
+                    throw SyscallException(strerror(errno));
+                }
+                cmd2 = shared_ptr<Command>(new NopCommand());
+                break;
             case OUT_RD_APPEND:
                 proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "a"));
-                if (proc2_stdout < 0){
+                if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));
                 }
                 proc1_stdout = fds[1];
@@ -102,7 +109,7 @@ void SmallShell::executeCommand(string cmd_line) {
                 break;
             case OUT_RD:
                 proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "w"));
-                if (proc2_stdout < 0){
+                if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));
                 }
                 proc1_stdout = fds[1];
@@ -114,6 +121,9 @@ void SmallShell::executeCommand(string cmd_line) {
             case PIPE_ERR:
                 proc1_stderr = fds[1];
                 break;
+            case NORMAL:
+                throw ImpossibleException("This shouldn't happen in production."
+                                          "The if before the switch makes sure of that.");
         }
 
         cmd1 = this->createCommand(get<1>(cmd_tuple));
@@ -124,10 +134,14 @@ void SmallShell::executeCommand(string cmd_line) {
         // Run first command
         if ((pid1 = fork()) == 0) {
             // Child
-            if (proc1_stdout != -1){
+            if (proc1_stdout != -1) {
                 dup2(proc1_stdout, STDOUT_FILENO);
-            }else if(proc1_stderr != -1){
+            }
+            if (proc1_stderr != -1) {
                 dup2(proc1_stderr, STDERR_FILENO);
+            }
+            if (proc1_stdin != -1) {
+                dup2(proc1_stdin, STDIN_FILENO);
             }
             close(fds[0]);
             close(fds[1]);
@@ -142,7 +156,7 @@ void SmallShell::executeCommand(string cmd_line) {
             // Child
             dup2(fds[0], STDIN_FILENO);
 
-            if(proc2_stdout != -1){
+            if (proc2_stdout != -1) {
                 dup2(proc2_stdout, STDOUT_FILENO);
             }
 
@@ -155,7 +169,7 @@ void SmallShell::executeCommand(string cmd_line) {
                 exit(1);
             }
             exit(0);
-        }else{
+        } else {
             // We don't need those fds, only used by children
             close(fds[0]);
             close(fds[1]);

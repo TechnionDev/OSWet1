@@ -4,11 +4,8 @@
 #include <unistd.h>
 
 #include <cstring>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <vector>
 
 #include "Exceptions.h"
@@ -293,5 +290,15 @@ void BackgroundCommand::execute() {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
         throw ItemDoesNotExist("bg:" + error_message.substr(prompt.length(), error_message.length()));
+    }
+}
+
+
+RedirectionCommand::RedirectionCommand() {}
+
+void RedirectionCommand::execute() {
+    int c;
+    while ((c = getchar()) != EOF) {
+        putchar(c);
     }
 }

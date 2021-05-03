@@ -49,7 +49,7 @@ class PipeCommand : public Command {
 class RedirectionCommand : public Command {
     // TODO: Add your data members
    public:
-    explicit RedirectionCommand(std::vector<std::string> &argv);
+    explicit RedirectionCommand();
     virtual ~RedirectionCommand() = default;
     void execute() override;
     // void prepare() override;

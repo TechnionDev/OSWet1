@@ -12,6 +12,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <sys/fcntl.h>
 
 #include "Utils.h"
 
@@ -81,85 +82,99 @@ void SmallShell::executeCommand(string cmd_line) {
         cmd->execute();
         this->cmd = nullptr;
     } else {
+        vector<int> fd_to_close;
         int fds[2] = {0};
         int pid1, pid2;
-        if(pipe(fds) != 0){
+        int proc1_stdout = -1, proc1_stderr = -1, proc2_stdout = -1;
+
+        if (pipe(fds) != 0) {
             throw SyscallException(string("pipe failed") + strerror(errno));
         }
-        shared_ptr<Command> cmd1, cmd2;
+
+        fd_to_close.push_back(fds[0]);
+        fd_to_close.push_back(fds[1]);
+
+        shared_ptr<Command> cmd1 = nullptr, cmd2 = nullptr;
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
+            case OUT_RD_APPEND:
+                proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "a"));
+                if (proc2_stdout < 0){
+                    throw SyscallException(strerror(errno));
+                }
+                proc1_stdout = fds[1];
+                cmd2 = shared_ptr<Command>(new RedirectionCommand());
+                break;
+            case OUT_RD:
+                proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "w"));
+                if (proc2_stdout < 0){
+                    throw SyscallException(strerror(errno));
+                }
+                proc1_stdout = fds[1];
+                cmd2 = shared_ptr<Command>(new RedirectionCommand());
+                break;
             case PIPE:
-                cmd1 = this->createCommand(get<1>(cmd_tuple));
-                cmd2 = this->createCommand(get<2>(cmd_tuple));
-                // Run first command
-                if ((pid1 = fork()) == 0) {
-                    // Child
-                    dup2(fds[1], STDOUT_FILENO);
-                    close(fds[0]);
-                    close(fds[1]);
-                    try {
-                        cmd1->execute();
-                    } catch (CommandException &exp) {
-                        cerr << exp.what() << endl;
-                        exit(1);
-                    }
-                    exit(0);
-                }
-                if ((pid2 = fork()) == 0) {
-                    // Child
-                    dup2(fds[0], STDIN_FILENO);
-                    close(fds[0]);
-                    close(fds[1]);
-                    try {
-                        cmd2->execute();
-                    } catch (CommandException &exp) {
-                        cerr << exp.what() << endl;
-                        exit(1);
-                    }
-                    exit(0);
-                }
-                // We don't need those fds, only used by children
-                close(fds[0]);
-                close(fds[1]);
-                int stat;
-                if (waitpid(pid1, &stat, WUNTRACED) < 0) {
-                    throw FailedToWaitOnChild("Failed to wait for " +
-                                              to_string(pid1) + " " +
-                                              strerror(errno));
-                } else if (waitpid(pid2, &stat, 0) < 0) {
-                    throw FailedToWaitOnChild("Failed to wait for " +
-                                              to_string(pid2) + " " +
-                                              strerror(errno));
-                }
+                proc1_stdout = fds[1];
                 break;
             case PIPE_ERR:
-                cmd1 = dynamic_pointer_cast<ExternalCommand>(this->createCommand(get<1>(cmd_tuple)));
-                cmd2 = dynamic_pointer_cast<ExternalCommand>(this->createCommand(get<2>(cmd_tuple)));
-                // Run first command
-                if ((pid1 = fork()) == 0) {
-                    // Child
-                    dup2(fds[0], STDERR_FILENO);
-                    // We don't need the pipe anymore
-                    close(fds[0]);
-                    close(fds[1]);
-                    cmd1->execute();
-                }
-                if ((pid2 = fork()) == 0) {
-                    // Child
-                    dup2(fds[1], STDIN_FILENO);
-                    // We don't need the pipe anymore
-                    close(fds[0]);
-                    close(fds[1]);
-                    cmd2->execute();
-                }
-
-                waitpid(pid1, NULL, WUNTRACED);
-                waitpid(pid2, NULL, WUNTRACED);
+                proc1_stderr = fds[1];
                 break;
         }
-        close(fds[0]);
-        close(fds[1]);
+
+        cmd1 = this->createCommand(get<1>(cmd_tuple));
+        if (cmd2 == nullptr) {
+            cmd2 = this->createCommand(get<2>(cmd_tuple));
+        }
+
+        // Run first command
+        if ((pid1 = fork()) == 0) {
+            // Child
+            if (proc1_stdout != -1){
+                dup2(proc1_stdout, STDOUT_FILENO);
+            }else if(proc1_stderr != -1){
+                dup2(proc1_stderr, STDERR_FILENO);
+            }
+            close(fds[0]);
+            close(fds[1]);
+            try {
+                cmd1->execute();
+            } catch (CommandException &exp) {
+                cerr << exp.what() << endl;
+                exit(1);
+            }
+            exit(0);
+        } else if ((pid2 = fork()) == 0) {
+            // Child
+            dup2(fds[0], STDIN_FILENO);
+
+            if(proc2_stdout != -1){
+                dup2(proc2_stdout, STDOUT_FILENO);
+            }
+
+            close(fds[0]);
+            close(fds[1]);
+            try {
+                cmd2->execute();
+            } catch (CommandException &exp) {
+                cerr << exp.what() << endl;
+                exit(1);
+            }
+            exit(0);
+        }else{
+            // We don't need those fds, only used by children
+            close(fds[0]);
+            close(fds[1]);
+            int stat;
+            if (waitpid(pid1, &stat, WUNTRACED) < 0) {
+                throw FailedToWaitOnChild("Failed to wait for " +
+                                          to_string(pid1) + " " +
+                                          strerror(errno));
+            } else if (waitpid(pid2, &stat, 0) < 0) {
+                throw FailedToWaitOnChild("Failed to wait for " +
+                                          to_string(pid2) + " " +
+                                          strerror(errno));
+            }
+        }
     }
 }
 

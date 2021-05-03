@@ -11,7 +11,7 @@ using namespace std;
 
 void ctrlCHandler(int sig_num) {
     // cout << "smash: got ctrl-C" << endl;  //  TODO: Remove call
-    write(STDOUT_FILENO, "got CTRL-C\n", strlen("got CTRL-C\n"));
+    write(STDOUT_FILENO, "smash: got ctrl-C\n", strlen("smash: got ctrl-C\n"));
 
     shared_ptr<ExternalCommand> fg_cmd =
         SmallShell::getInstance().getExternalCommand();
@@ -38,22 +38,21 @@ void ctrlCHandler(int sig_num) {
 }
 
 void ctrlZHandler(int sig_num) {
-    // TODO: Add your implementation
 
-    SmallShell *smash = &SmallShell::getInstance();
+//    SmallShell *smash = &SmallShell::getInstance();
 
-    cout << "smash: got ctrl-Z" << smash->getExternalCommand() << endl;
+    cout << "smash: got ctrl-Z" << endl;
 
-    if (smash->getExternalCommand() != nullptr) {
-        pid_t curr_pid = smash->getExternalCommand()->getPid();
-
+    if (SmallShell::getInstance().getExternalCommand() != nullptr) {
+        pid_t curr_pid = SmallShell::getInstance().getExternalCommand()->getPid();
         if (kill(curr_pid, SIGSTOP) != 0) {
             perror("smash error: kill failed");
             return;
         }
-        // TODO: Replace cout << with write() directly
-        smash->getJobList().addJob(smash->getExternalCommand(), true);
-        cout << "smash: process " + to_string(curr_pid) + " was stopped";
+        //TODO: Replace cout << with write() directly
+        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), true);
+        cout << "smash: process " + to_string(curr_pid) + " was stopped"<<endl;
+        //smash->setExternalCommand(nullptr);
     }
 }
 

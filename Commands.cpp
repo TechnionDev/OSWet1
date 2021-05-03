@@ -6,7 +6,6 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <vector>
 
 #include "Exceptions.h"
@@ -175,6 +174,7 @@ ExternalCommand::ExternalCommand(const string &command, bool isBackground, const
 
 void ExternalCommand::execute() {
     pid_t pid = fork();
+
     if (pid == -1) {
         throw CommandException(string("fork failed: ") + strerror(errno));
     } else if (pid == 0) {
@@ -187,15 +187,19 @@ void ExternalCommand::execute() {
         argv[3] = NULL;
 
         // Replace with the target process image
-        execvp(argv[0], argv);
+        execlp(BASH_PATH, BASH_PATH, "-c", this->command.c_str(), NULL);
         // If we're here, then something failed
         throw CommandException(string("execvp failed: ") + strerror(errno));
     } else {
         this->pid = pid;
-        if (not this->isBackground) {
+        // Either put in jobslist, or waitpid for the process to finish
+        if (this->isBackground) {
+            SmallShell::getInstance().getJobList().addJob(
+                    SmallShell::getInstance().getExternalCommand(), false);
+        } else {
             int stat = 0;
             if (waitpid(pid, &stat, WUNTRACED) < 0) {
-                throw CommandException(string("waitpid failed: ") + strerror(errno));
+                throw SyscallException(string("waitpid failed: ") + strerror(errno));
             }
         }
         SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), false);
@@ -315,5 +319,15 @@ void BackgroundCommand::execute() {
                 error_message.substr(prompt.length(), error_message.length()));
     } catch (exception &exp) {
         throw exp;
+    }
+}
+
+
+RedirectionCommand::RedirectionCommand() {}
+
+void RedirectionCommand::execute() {
+    int c;
+    while ((c = getchar()) != EOF) {
+        putchar(c);
     }
 }

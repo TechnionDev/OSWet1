@@ -47,12 +47,10 @@ class PipeCommand : public Command {
 };
 
 class RedirectionCommand : public Command {
- public:
-  explicit RedirectionCommand(std::vector<std::string> &argv);
-  virtual ~RedirectionCommand() = default;
-  void execute() override;
-  // void prepare() override;
-  // void cleanup() override;
+   public:
+    explicit RedirectionCommand();
+    virtual ~RedirectionCommand() = default;
+    void execute() override;
 };
 
 class NopCommand : public BuiltInCommand {

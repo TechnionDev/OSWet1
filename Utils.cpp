@@ -28,21 +28,22 @@ bool can_exec(const char *file) {
 
 tuple<CommandType, string, string> splitPipeRedirect(const string &str) {
     // Order matters here (
-    map<string, CommandType> delim_to_type = {{"|&", PIPE_ERR},
-                                              {">>", OUT_RD_APPEND},
-                                              {"<",  IN_RD},
-                                              {">",  OUT_RD},
-                                              {"|",  PIPE}};
+    vector<pair<string, CommandType>> delim_to_type = {{"|&", PIPE_ERR},
+                                                       {">>", OUT_RD_APPEND},
+                                                       {"<",  IN_RD},
+                                                       {">",  OUT_RD},
+                                                       {"|",  PIPE}};
 
     for (const auto &delim_type: delim_to_type) {
         auto pos = str.find(delim_type.first);
         if (pos != string::npos) {
             return tuple<CommandType, string, string>(delim_type.second,
-                                                      str.substr(0, pos),
-                                                      str.substr(pos + delim_type.first.length()));
+                                                      removeBackgroundSign(str.substr(0, pos)),
+                                                      removeBackgroundSign(
+                                                              str.substr(pos + delim_type.first.length())));
         }
-        return tuple<CommandType, string, string>(NORMAL, str, "");
     }
+    return tuple<CommandType, string, string>(NORMAL, str, "");
 }
 
 vector<string> split(const string &str) {
@@ -93,6 +94,6 @@ string removeBackgroundSign(string cmd_line) {
     if (trimmed[trimmed.length() - 1] == '&') {
         return trimmed.substr(0, trimmed.length() - 1);
     } else {
-        return cmd_line;
+        return trimmed;
     }
 }

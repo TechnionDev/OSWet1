@@ -1,169 +1,22 @@
 #include "Commands.h"
 
-#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <fstream>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <vector>
+
+#include "Exceptions.h"
+#include "Jobs.h"
+#include "SmallShell.h"
+#include "Utils.h"
 
 using namespace std;
 
-#if 0
-#define FUNC_ENTRY() cout << __PRETTY_FUNCTION__ << " --> " << endl;
-
-#define FUNC_EXIT() cout << __PRETTY_FUNCTION__ << " <-- " << endl;
-#else
-#define FUNC_ENTRY()
-#define FUNC_EXIT()
-#endif
-
-typedef enum { kCommandCtor } CommandMapKey;
-typedef Command* (*CommandCtorWrapperFuncPtr)(vector<string>);
-
-template <class T>
-Command* constructorWrapper(vector<string> argv) {
-    return new T(argv);
-}
-
-static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
-    {"chprompt", &constructorWrapper<ChangePromptCommand>},
-    {"cd", &constructorWrapper<ChangeDirCommand>},
-    {"cat", &constructorWrapper<CatCommand>}
-    /* Add more commands here */
-};
-
-vector<string> split(const string& str, const string& sep) {
-    vector<string> argv;
-    for (size_t curr_pos = str.find(sep, 0), prev_pos = 0;
-         curr_pos < str.length() || prev_pos < str.length();
-         prev_pos = curr_pos + sep.length(),
-                curr_pos = str.find(sep, prev_pos)) {
-        // No next delim
-        if (curr_pos == string::npos) {
-            curr_pos = str.length();
-        }
-        // Retreive current arg
-        string arg = str.substr(prev_pos, curr_pos - prev_pos);
-        if (!arg.empty()) {
-            argv.push_back(arg);
-        }
-    }
-    return argv;
-}
-
-string _ltrim(const std::string& s) {
-    size_t start = s.find_first_not_of(WHITESPACE);
-    return (start == std::string::npos) ? "" : s.substr(start);
-}
-
-string _rtrim(const std::string& s) {
-    size_t end = s.find_last_not_of(WHITESPACE);
-    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
-}
-
-string _trim(const std::string& s) { return _rtrim(_ltrim(s)); }
-
-int _parseCommandLine(const char* cmd_line, char** args) {
-    FUNC_ENTRY()
-    int i = 0;
-    std::istringstream iss(_trim(string(cmd_line)).c_str());
-    for (std::string s; iss >> s;) {
-        args[i] = (char*)malloc(s.length() + 1);
-        memset(args[i], 0, s.length() + 1);
-        strcpy(args[i], s.c_str());
-        args[++i] = NULL;
-    }
-    return i;
-
-    FUNC_EXIT()
-}
-
-bool _isBackgroundComamnd(const char* cmd_line) {
-    const string str(cmd_line);
-    return str[str.find_last_not_of(WHITESPACE)] == '&';
-}
-
-void _removeBackgroundSign(char* cmd_line) {
-    const string str(cmd_line);
-    // find last character other than spaces
-    size_t idx = str.find_last_not_of(WHITESPACE);
-    // if all characters are spaces then return
-    if (idx == string::npos) {
-        return;
-    }
-    // if the command line does not end with & then return
-    if (cmd_line[idx] != '&') {
-        return;
-    }
-    // replace the & (background sign) with space and then remove all tailing
-    // spaces.
-    cmd_line[idx] = ' ';
-    // truncate the command line string up to the last non-space character
-    cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
-}
-
-// TODO: Add your implementation for classes in Commands.h
-
-SmallShell::SmallShell() : prompt(SHELL_NAME) {}
-
-SmallShell::~SmallShell() {
-    // TODO: add your implementation
-}
-
-/**
- * Creates and returns a pointer to Command class which matches the given
- * command line (cmd_line)
- */
-Command* SmallShell::CreateCommand(const char* cmd_line) {
-    // For example:
-    /*
-      string cmd_s = _trim(string(cmd_line));
-      string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-
-      if (firstWord.compare("pwd") == 0) {
-        return new GetCurrDirCommand(cmd_line);
-      }
-      else if (firstWord.compare("showpid") == 0) {
-        return new ShowPidCommand(cmd_line);
-      }
-      else if ...
-      .....
-      else {
-        return new ExternalCommand(cmd_line);
-      }
-      */
-
-    string cmd_s = _trim(string(cmd_line));
-    char* args[MAX_ARG_COUNT];  // TODO: Support unlimited number of arguments
-    // Split on space
-    vector<string> argv = split(cmd_s, ARG_SEPARATOR);
-    if (argv.size() == 0) {
-        return new NopCommand();
-    } else {
-        try {
-            return commandsCtors.at(argv[0])(
-                vector<string>(argv.begin() + 1, argv.end()));
-        } catch (out_of_range& exc) {
-            raise CommandNotFoundException(argv[0]);
-        }
-    }
-}
-
-void SmallShell::executeCommand(const char* cmd_line) {
-    Command* cmd = CreateCommand(cmd_line);
-    cmd->execute();
-}
-
-void SmallShell::setPrompt(string new_prompt) { self->prompt = new_prompt; }
-string SmallShell::getPrompt() const { return self->prompt + PROMPT_SIGN; }
-
-ChangePromptCommand::ChangePromptCommand(vector<string>& argv) {
-    if (argv.size() == 0) {
+ChangePromptCommand::ChangePromptCommand(vector<string> &argv) {
+    if (argv.empty()) {
         new_prompt = SHELL_NAME;
     } else {
         new_prompt = argv[0];
@@ -174,20 +27,24 @@ void ChangePromptCommand::execute() {
     SmallShell::getInstance().setPrompt(self->new_prompt);
 }
 
-CatCommand::CatCommand(vector<string>& argv) : argv(argv) {}
+CatCommand::CatCommand(vector<string> &argv) : argv(argv) {
+    if (argv.empty()) {
+        throw MissingRequiredArgumentsException("cat: not enough arguments");
+    }
+}
 
 void CatCommand::execute() {
     ifstream file;
     vector<char> buffer(1024, 0);
-    for (auto it : argv) {
+    for (const auto &it : argv) {
         // TODO: Add support for piping and redirection
         file.open(it);
         if (!file.is_open()) {
-            raise FailedToOpenFileException(it + ": " + strerror(errno));
+            throw FailedToOpenFileException(string("open failed: ") + strerror(errno));
         }
 
         do {
-            buffer.empty();
+            memset(buffer.data(), 0, buffer.size());
             file.read(buffer.data(), buffer.size());
             if (file.gcount() == 0) {
                 break;
@@ -200,19 +57,277 @@ void CatCommand::execute() {
     }
 }
 
-ChangeDirCommand::ChangeDirCommand(vector<string>& argv) {
-    if (argv.size() < 1) {
+std::string getPwd() {
+    char pwd[PATH_MAX];
+    return string(getwd(pwd));
+}
+
+ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
+    if (argv.empty()) {
         ostringstream err_msg;
         err_msg << "Got " << argv.size() << " arguments, expected 1";
-        raise MissingRequiredArgumentsException(err_msg.str());
+        throw MissingRequiredArgumentsException(err_msg.str());
+    } else if (argv.size() > 1) {
+        throw TooManyArgumentsException("cd: too many arguments");
     }
     self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
 
 void ChangeDirCommand::execute() {
-    if (chdir(self->new_dir.c_str()) != 0) {
-        // Failed
-        // TODO: Maybe find a more meaningful exception
-        raise CommandException(strerror(errno));
+    if (self->new_dir == "-") {
+        string last_pwd = SmallShell::getInstance().getLastDir();
+        if (last_pwd.empty()) {
+            throw ItemDoesNotExist("cd: OLDPWD not set");
+        }
+        self->new_dir = last_pwd;
+        string curr_pwd = getPwd();
+        if (chdir(self->new_dir.c_str()) != 0) {
+            // Failed
+            throw CommandException(string("chdir failed: ") + strerror(errno));
+        }
+        SmallShell::getInstance().setLastDir(curr_pwd);
+    } else {
+        string last_pwd = getPwd();
+        if (chdir(self->new_dir.c_str()) != 0) {
+            // Failed
+            throw CommandException(string("chdir failed: ") + strerror(errno));
+        }
+        SmallShell::getInstance().setLastDir(last_pwd);
+    }
+}
+
+ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
+
+void ShowPidCommand::execute() {
+    cout << "smash pid is " + to_string(getpid()) << endl;
+}
+
+GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
+
+void GetCurrDirCommand::execute() { cout << getPwd() << endl; }
+
+JobsCommand::JobsCommand(vector<std::string> &argv) {}
+
+void JobsCommand::execute() {
+    SmallShell::getInstance().getJobList().printJobsList();
+}
+KillCommand::KillCommand(vector<string> &argv) {
+    try {
+        if (argv.size() != 2) {
+            throw MissingRequiredArgumentsException("kill: invalid arguments");
+        }
+        if (argv[0][0] != '-' || argv.size() != 2) {
+            throw MissingRequiredArgumentsException("kill: invalid arguments");
+        }
+        sig_num = stoi(argv[0].substr(1));
+        jod_id = stoi(argv[1]);
+        if (sig_num <= 0 || jod_id <= 0) {
+            throw MissingRequiredArgumentsException("kill: invalid arguments");
+        }
+    } catch (exception &exp) {
+        throw MissingRequiredArgumentsException("kill: invalid arguments");
+    }
+}
+
+void KillCommand::execute() {
+    pid_t res_pid;
+    try {
+        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id)->cmd->getPid();
+    } catch (ItemDoesNotExist &exp) {
+        string prompt = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist("kill:" + error_message.substr(prompt.length(), error_message.length()));
+    }
+    if (kill(res_pid, sig_num) != 0) {
+        throw CommandException(string("kill failed: ") + strerror(errno));
+    }
+    cout << "signal number " + to_string(sig_num) + " was sent to pid " + to_string(res_pid) << endl;
+    SmallShell::getInstance().getJobList().removeFinishedJobs();
+}
+
+QuitCommand::QuitCommand(vector<std::string> &argv) {
+    if (!argv.empty() and argv[0] == "kill") {
+        this->kill_all = true;
+    }
+}
+
+void QuitCommand::execute() {
+    if (this->kill_all) {
+        int size = SmallShell::getInstance().getJobList().size();
+        cout << "smash: sending SIGKILL signal to " + to_string(size) +
+            " jobs:" << endl;
+        SmallShell::getInstance().getJobList().killAllJobs();
+    }
+    exit(EXIT_SUCCESS);
+}
+
+ExternalCommand::ExternalCommand(const string &command, bool isBackground, const string &command_with_background)
+    : pid(0), command(command), isBackground(isBackground), command_with_background(command_with_background) {
+    if (command.empty()) {
+        throw CommandNotFoundException("No command specified");
+    }
+
+    /* else if (not can_exec(argv[0].c_str())) {
+        throw CommandNotFoundException("Command " + argv[0] + " not found");
+    } */
+}
+
+void ExternalCommand::execute() {
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        throw CommandException(string("fork failed: ") + strerror(errno));
+    } else if (pid == 0) {
+        setpgrp();
+        // Forked - setup arguments
+        char **argv = new char *[4];
+        argv[0] = strdup(BASH_PATH);
+        argv[1] = strdup("-c");
+        argv[2] = strdup(this->command.c_str());
+        argv[3] = NULL;
+
+        // Replace with the target process image
+        execlp(BASH_PATH, BASH_PATH, "-c", this->command.c_str(), NULL);
+        // If we're here, then something failed
+        throw CommandException(string("execvp failed: ") + strerror(errno));
+    } else {
+        this->pid = pid;
+        // Either put in jobslist, or waitpid for the process to finish
+        if (this->isBackground) {
+            SmallShell::getInstance().getJobList().addJob(
+                    SmallShell::getInstance().getExternalCommand(), false);
+        } else {
+            int stat = 0;
+            if (waitpid(pid, &stat, WUNTRACED) < 0) {
+                throw SyscallException(string("waitpid failed: ") + strerror(errno));
+            }
+        }
+        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), false);
+    }
+}
+
+string ExternalCommand::getCommandName() const {
+    return split(this->command)[0];
+}
+
+pid_t ExternalCommand::getPid() const { return this->pid; }
+
+string ExternalCommand::getCommand() const { return this->command_with_background; }
+
+bool ExternalCommand::operator==(const ExternalCommand &other) const {
+    if (other.isBackground == this->isBackground &&
+        other.getCommand() == this->getCommand() &&
+        other.getPid() == this->getPid()) { return true; }
+    return false;
+}
+
+ForegroundCommand::ForegroundCommand(vector<std::string> &argv)
+    : job_id(0 /* 0 means last job */) {
+    if (argv.size() > 1) {
+        throw MissingRequiredArgumentsException("fg: invalid arguments");
+    }
+    if (argv.size() == 1) {
+        try {
+            this->job_id = stoi(argv[0]);
+        } catch (invalid_argument &exp) {
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        } catch (out_of_range &exp) {
+            throw MissingRequiredArgumentsException("fg: invalid arguments");
+        }
+    }
+
+}
+
+void ForegroundCommand::execute() {
+    try {
+        pid_t job_pid;
+        string job_command;
+        shared_ptr<ExternalCommand> foreground_cmd;
+        SmallShell &smash = SmallShell::getInstance();
+        JobsList &job_list = smash.getJobList();
+        if (this->job_id != 0) {
+            foreground_cmd = job_list.getJobById(this->job_id)->cmd;
+            job_command = foreground_cmd->getCommand();
+            job_pid = foreground_cmd->getPid();
+        } else {
+            foreground_cmd = job_list.getLastJob(&job_pid, &job_id)->cmd;
+            job_command = foreground_cmd->getCommand();
+        }
+        cout << job_command + " : " + to_string(job_pid) << endl;
+        if (kill(job_pid, SIGCONT) != 0) {
+            throw CommandException(string("kill failed: ") + strerror(errno));
+        }
+        smash.getJobList().setForegroundJob(this->job_id);
+        SmallShell::getInstance().setExternalCommand(foreground_cmd);
+
+        int stat = 0;
+        if (waitpid(job_pid, &stat, WUNTRACED) < 0) {
+            throw CommandException(string("waitpid failed: ") + strerror(errno));
+        }
+    } catch (CommandException &exp) {
+        string err_prefix = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist(
+            "fg: " +
+                error_message.substr(err_prefix.length(), error_message.length()));
+    } catch (exception &exp) {
+        throw exp;
+    }
+}
+
+BackgroundCommand::BackgroundCommand(vector<std::string> &argv) {
+    try {
+        if (argv.size() > 1) {
+            throw MissingRequiredArgumentsException("bg: invalid arguments");
+        }
+        if (argv.size() == 1) {
+            job_id = stoi(argv[0]);
+        }
+    } catch (exception &exp) {
+        throw MissingRequiredArgumentsException("bg: invalid arguments");
+    }
+}
+
+void BackgroundCommand::execute() {
+    try {
+        JobsList &job_list = SmallShell::getInstance().getJobList();
+        pid_t job_pid = 0;
+        string job_command;
+        if (this->job_id != 0) {
+            if (!job_list.getJobById(this->job_id)->is_stopped) {
+                throw AlreadyRunningInBackGround(
+                    "job-id " + to_string(this->job_id) + " is already running in the background");
+            }
+            job_command = job_list.getJobById(this->job_id)->cmd->getCommand();
+            job_pid = job_list.getJobById(this->job_id)->cmd->getPid();
+        } else {
+            job_command =
+                job_list.getLastStoppedJob(&(this->job_id))->cmd->getCommand();
+            job_pid = job_list.getLastStoppedJob(&(this->job_id))->cmd->getPid();
+        }
+        cout << job_command + " : " + to_string(job_pid) << endl;
+        job_list.getJobById(this->job_id)->is_stopped = false;
+        if (kill(job_pid, SIGCONT) != 0) {
+            job_list.getJobById(this->job_id)->is_stopped = true;
+            throw CommandException(string("kill failed: ") + strerror(errno));
+        }
+    } catch (CommandException &exp) {
+        string prompt = ERR_PREFIX;
+        string error_message = string(exp.what());
+        throw ItemDoesNotExist(
+            "bg:" +
+                error_message.substr(prompt.length(), error_message.length()));
+    } catch (exception &exp) {
+        throw exp;
+    }
+}
+
+
+RedirectionCommand::RedirectionCommand() {}
+
+void RedirectionCommand::execute() {
+    int c;
+    while ((c = getchar()) != EOF) {
+        putchar(c);
     }
 }

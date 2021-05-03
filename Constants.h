@@ -7,18 +7,18 @@
 #define MAX_JOBS_COUNT 100
 #define MAX_PROC_NAME 50
 
-
 // String constants
-#define ARG_SEPARATOR " "
+#define BASH_PATH "/bin/bash"
 #define SHELL_NAME "smash"
+// #define ERR_PREFIX SHELL_NAME ": "
 #define ERR_PREFIX_NOSPACE SHELL_NAME " error:"
 #define ERR_PREFIX ERR_PREFIX_NOSPACE " "
 #define PROMPT_SIGN "> "
-#define ERROR(x) (ERR_PREFIX_NOSPACE PROMPT_SIGN"\"" x "\"")
-#define WHITESPACE " "
-
+#define ERROR(x) (ERR_PREFIX_NOSPACE PROMPT_SIGN "\"" x "\"")
+#define WHITESPACE " \n\r\t\f\v"
+//
+#define SIG_KILL 9
 // Aliasing macros
 #define self this
-#define raise throw
 
 #endif

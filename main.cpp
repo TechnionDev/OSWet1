@@ -3,17 +3,17 @@
 #include <unistd.h>
 
 #include <iostream>
-
-#include "Commands.h"
+#include "SmallShell.h"
 #include "signals.h"
 
 using std::cin;
 using std::cout;
+using std::endl;
 using std::flush;
 using std::getline;
 using std::string;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (signal(SIGTSTP, ctrlZHandler) == SIG_ERR) {
         perror(ERR_PREFIX "failed to set ctrl-Z handler");
     }
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     // TODO: setup sig alarm handler
 
-    SmallShell& smash = SmallShell::getInstance();
+    SmallShell &smash = SmallShell::getInstance();
     string cmd_line = "";
     int c;
     while (true) {
@@ -49,7 +49,14 @@ int main(int argc, char* argv[]) {
         //         break;
         // }
         getline(cin, cmd_line);
-        smash.executeCommand(cmd_line.c_str());
+        smash.getJobList().removeFinishedJobs();
+
+        try {
+            smash.executeCommand(cmd_line);
+        } catch (CommandException &exp) {
+            std::cerr << exp.what() << endl;
+        }
     }
     return 0;
 }
+

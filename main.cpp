@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
     string cmd_line = "";
     int c;
     while (true) {
-        smash.getJobList().removeFinishedJobs();
         cout << smash.getPrompt() << flush;
         // switch ((c = getch())) {
         //     case KEY_UP:
@@ -50,6 +49,7 @@ int main(int argc, char *argv[]) {
         //         break;
         // }
         getline(cin, cmd_line);
+        smash.getJobList().removeFinishedJobs();
 
         try {
             smash.executeCommand(cmd_line);

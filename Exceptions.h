@@ -24,5 +24,6 @@ EXCEPTION(FailedToResumeChild);
 EXCEPTION(NoJobProvided);
 EXCEPTION(SyscallException);
 EXCEPTION(ImpossibleException);
+EXCEPTION(TimeoutInvalidArguments);
 
 #endif  // OSWET1__EXCEPTIONS_H_

@@ -1,6 +1,7 @@
 #ifndef OSWET1__SMALLSHELL_H_
 #define OSWET1__SMALLSHELL_H_
 
+#include <set>
 #include "Commands.h"
 #include "Jobs.h"
 
@@ -8,6 +9,8 @@ class SmallShell {
 private:
     std::string prompt;
     std::string last_dir;
+    // Pairs of end-time and the pid of the process
+    std::set<std::tuple<time_t, pid_t, std::string>> timers;
 
     SmallShell();
 
@@ -42,6 +45,13 @@ public:
     std::shared_ptr<ExternalCommand> getExternalCommand() { return cmd; }
 
     void setExternalCommand(std::shared_ptr<ExternalCommand> parm_cmd);
+
+    void registerTimeoutProcess(int timeout_pid, int timeout_seconds, std::string command);
+
+    std::set<std::tuple<time_t, pid_t, std::string>> &getTimers();
+
+    void removeFromTimers(pid_t timeout_pid);
+
 };
 
 #endif  // OSWET1__SMALLSHELL_H_

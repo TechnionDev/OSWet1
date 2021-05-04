@@ -28,11 +28,13 @@ class ExternalCommand : public Command {
   std::string command;
   std::string command_with_background;
   bool isBackground;
+  int timeout = -1;
 
  public:
   ExternalCommand(const std::string &command, bool isBackground, const std::string &command_with_background);
   bool operator==(ExternalCommand const &other_cmd) const;
   virtual ~ExternalCommand() = default;
+  void setTimeout(int to);
   void execute() override;
   std::string getCommand() const;
   std::string getCommandName() const;

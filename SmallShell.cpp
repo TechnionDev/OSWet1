@@ -51,17 +51,32 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     string no_background_cmd = removeBackgroundSign(cmd_s);
     // Remove background sign, trim (part of remove background) and split
     vector<string> argv = split(no_background_cmd);
+    int timeout = 0;
     if (argv.empty()) {
         return shared_ptr<Command>(new NopCommand());
     } else {
+        if (argv[0] == "timeout") {
+            stringstream timeout_ss(argv[1]);
+            timeout_ss >> timeout;
+            if (timeout_ss.fail()) {
+                throw TimeoutInvalidArguments("timeout: invalid arguments");
+            }
+        }
         try {
             shared_ptr<Command> new_cmd =
                     commandsCtors.at(argv[0])(subvector(argv, 1, VEC_END));
             return new_cmd;
         } catch (out_of_range &exc) {
+            string s_cmd_to_run;
+            if (timeout) {
+                s_cmd_to_run = no_background_cmd.substr(no_background_cmd.find_first_of(argv[1]) + argv[1].length());
+            } else {
+                s_cmd_to_run = no_background_cmd;
+            }
             const shared_ptr<ExternalCommand>
-                    new_cmd(new ExternalCommand(no_background_cmd, isBackgroundComamnd(cmd_s), cmd_s));
-            setExternalCommand(new_cmd);
+                    new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundComamnd(cmd_s), cmd_s));
+            this->setExternalCommand(new_cmd); // TODO: Always? not just if it's a foreground command?
+            new_cmd->setTimeout(timeout);
             return new_cmd;
         }
     }
@@ -71,10 +86,10 @@ void SmallShell::executeCommand(string cmd_line) {
     auto cmd_tuple = splitPipeRedirect(cmd_line);
 
     if (get<0>(cmd_tuple) == NORMAL) {
-        shared_ptr<Command> cmd = createCommand(cmd_line);
+        shared_ptr<Command> cmd_ptr = createCommand(cmd_line);
         // TODO: Handle external isBackground (maybe handle9 in execute for prettier
         // handling)
-        cmd->execute();
+        cmd_ptr->execute();
         this->cmd = nullptr;
     } else {
         vector<int> fd_to_close;
@@ -197,4 +212,33 @@ void SmallShell::setLastDir(std::string new_dir) { self->last_dir = new_dir; }
 
 void SmallShell::setExternalCommand(shared_ptr<ExternalCommand> parm_cmd) {
     this->cmd = parm_cmd;
+}
+
+
+void SmallShell::registerTimeoutProcess(int timeout_pid, int timeout_seconds, string command) {
+    time_t target_time = time(NULL) + timeout_seconds;
+    this->timers.insert(tuple<time_t, pid_t, string>(target_time, timeout_pid, command));
+    alarm(get<0>(*this->timers.begin()) - time(NULL));
+}
+
+std::set<std::tuple<time_t, pid_t, std::string>> &SmallShell::getTimers() {
+    return this->timers;
+}
+
+void SmallShell::removeFromTimers(pid_t timeout_pid) {
+    auto it = this->timers.begin();
+
+    while (it != this->timers.end()) {
+        if (get<1>(*it) == timeout_pid) {
+            it = this->timers.erase(it);
+            if (it == this->timers.end()) {
+                break;
+            }
+            ++it;
+        }
+    }
+    if(this->timers.size() == 0){
+        // Remove pending alarm
+        alarm(0);
+    }
 }

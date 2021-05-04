@@ -7,17 +7,18 @@
 
 #include "Commands.h"
 #include "SmallShell.h"
+
 using namespace std;
 
 void ctrlCHandler(int sig_num) {
     // cout << "smash: got ctrl-C" << endl;  //  TODO: Remove call
     write(STDOUT_FILENO, "smash: got ctrl-C\n", strlen("smash: got ctrl-C\n"));
-
-    shared_ptr<ExternalCommand> fg_cmd =
-        SmallShell::getInstance().getExternalCommand();
+    SmallShell &smash = SmallShell::getInstance();
+    shared_ptr<ExternalCommand> fg_cmd = smash.getExternalCommand();
 
     if (fg_cmd != nullptr) {
         pid_t curr_pid = fg_cmd->getPid();
+        smash.removeFromTimers(curr_pid);
         if (kill(curr_pid, SIGKILL) != 0) {
             perror("smash error: kill failed");
             return;
@@ -42,20 +43,38 @@ void ctrlZHandler(int sig_num) {
 //    SmallShell *smash = &SmallShell::getInstance();
 
     cout << "smash: got ctrl-Z" << endl;
+    SmallShell &smash = SmallShell::getInstance();
 
-    if (SmallShell::getInstance().getExternalCommand() != nullptr) {
-        pid_t curr_pid = SmallShell::getInstance().getExternalCommand()->getPid();
+    if (smash.getExternalCommand() != nullptr) {
+        pid_t curr_pid = smash.getExternalCommand()->getPid();
         if (kill(curr_pid, SIGSTOP) != 0) {
             perror("smash error: kill failed");
             return;
         }
         //TODO: Replace cout << with write() directly
-        SmallShell::getInstance().getJobList().addJob(SmallShell::getInstance().getExternalCommand(), true);
-        cout << "smash: process " + to_string(curr_pid) + " was stopped"<<endl;
+        smash.getJobList().addJob(smash.getExternalCommand(), true);
+        cout << "smash: process " + to_string(curr_pid) + " was stopped" << endl;
         //smash->setExternalCommand(nullptr);
     }
 }
 
 void alarmHandler(int sig_num) {
-    // TODO: Add your implementation
+    SmallShell &smash = SmallShell::getInstance();
+    shared_ptr<ExternalCommand> cmd = smash.getExternalCommand();
+    time_t now = time(NULL);
+    auto &timers = smash.getTimers();
+    auto it = timers.begin();
+
+    while (it != timers.end()) {
+        if (get<0>(*it) > now) {
+            cout << "another timer in " << get<0>(*it) - now << endl;
+            alarm(get<0>(*it) - now);
+            break;
+        } else {
+            cout << "smash: got an alarm" << endl;
+            cout << SHELL_NAME << ": " << get<2>(*it) << " timed out!" << endl;
+            kill(get<1>(*it), SIGKILL);
+            it = timers.erase(it);
+        }
+    }
 }

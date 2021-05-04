@@ -194,9 +194,9 @@ void ExternalCommand::execute() {
     } else {
         this->pid = pid;
         SmallShell &smash = SmallShell::getInstance();
-        auto job_list = smash.getJobList();
+        auto &job_list = smash.getJobList();
         if (this->timeout != -1) {
-            smash.registerTimeoutProcess(this->pid, this->timeout, this->command);
+            smash.registerTimeoutProcess(this->pid, this->timeout, this->command_with_background);
         }
         // Either put in jobslist, or waitpid for the process to finish
         if (this->isBackground) {
@@ -204,12 +204,15 @@ void ExternalCommand::execute() {
         } else {
             int stat = 0;
             if (waitpid(pid, &stat, WUNTRACED) < 0) {
-                smash.removeFromTimers(pid);
+                if (this->timeout != -1) {
+                    smash.removeFromTimers(pid);
+                }
                 throw SyscallException(string("waitpid failed: ") + strerror(errno));
             }
-            smash.removeFromTimers(pid);
+            if (this->timeout != -1) {
+                smash.removeFromTimers(pid);
+            }
         }
-        job_list.addJob(smash.getExternalCommand(), false);
     }
 }
 

@@ -6,7 +6,7 @@ build/
 sandbox*
 OSWet1-main/
 .idea/
-
+os1-tests/
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,vscode,visualstudiocode,jetbrains,clion,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,vscode,visualstudiocode,jetbrains,clion,cmake

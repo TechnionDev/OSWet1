@@ -64,16 +64,16 @@ std::string getPwd() {
 
 ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
     if (argv.empty()) {
-        ostringstream err_msg;
-        err_msg << "Got " << argv.size() << " arguments, expected 1";
-        throw MissingRequiredArgumentsException(err_msg.str());
-    } else if (argv.size() > 1) {
-        throw TooManyArgumentsException("cd: too many arguments");
+        self->new_dir = "";
+    } else {
+        self->new_dir = argv[0];  // The rest of the arguments are ignored
     }
-    self->new_dir = argv[0];  // The rest of the arguments are ignored
 }
 
 void ChangeDirCommand::execute() {
+    if (self->new_dir == "") {
+        return; // Do nothing
+    }
     if (self->new_dir == "-") {
         string last_pwd = SmallShell::getInstance().getLastDir();
         if (last_pwd.empty()) {
@@ -146,11 +146,7 @@ void KillCommand::execute() {
     SmallShell::getInstance().getJobList().removeFinishedJobs();
 }
 
-QuitCommand::QuitCommand(vector<std::string> &argv) {
-    if (!argv.empty() and argv[0] == "kill") {
-        this->kill_all = true;
-    }
-}
+QuitCommand::QuitCommand(vector<std::string> &argv) : kill_all((not argv.empty()) and argv[0] == "kill") {}
 
 void QuitCommand::execute() {
     if (this->kill_all) {
@@ -162,7 +158,10 @@ void QuitCommand::execute() {
     exit(EXIT_SUCCESS);
 }
 
-ExternalCommand::ExternalCommand(const string &command, bool isBackground, const string &command_with_background)
+ExternalCommand::ExternalCommand(
+        const string &command,
+        bool isBackground,
+        const string &command_with_background)
         : pid(0), command(command), isBackground(isBackground), command_with_background(command_with_background) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
@@ -180,12 +179,6 @@ void ExternalCommand::execute() {
         throw CommandException(string("fork failed: ") + strerror(errno));
     } else if (pid == 0) {
         setpgrp();
-        // Forked - setup arguments
-        char **argv = new char *[4];
-        argv[0] = strdup(BASH_PATH);
-        argv[1] = strdup("-c");
-        argv[2] = strdup(this->command.c_str());
-        argv[3] = NULL;
 
         // Replace with the target process image
         execlp(BASH_PATH, BASH_PATH, "-c", this->command.c_str(), NULL);

@@ -67,7 +67,6 @@ void alarmHandler(int sig_num) {
 
     while (it != timers.end()) {
         if (get<0>(*it) > now) {
-            cout << "another timer in " << get<0>(*it) - now << endl;
             alarm(get<0>(*it) - now);
             break;
         } else {

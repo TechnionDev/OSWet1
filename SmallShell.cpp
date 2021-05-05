@@ -51,7 +51,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     string no_background_cmd = removeBackgroundSign(cmd_s);
     // Remove background sign, trim (part of remove background) and split
     vector<string> argv = split(no_background_cmd);
-    int timeout = 0;
+    int timeout = -1;
     if (argv.empty()) {
         return shared_ptr<Command>(new NopCommand());
     } else {
@@ -68,7 +68,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             return new_cmd;
         } catch (out_of_range &exc) {
             string s_cmd_to_run;
-            if (timeout) {
+            if (timeout != -1) {
                 s_cmd_to_run = no_background_cmd.substr(no_background_cmd.find_first_of(argv[1]) + argv[1].length());
             } else {
                 s_cmd_to_run = no_background_cmd;
@@ -76,7 +76,9 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             const shared_ptr<ExternalCommand>
                     new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundComamnd(cmd_s), cmd_s));
             this->setExternalCommand(new_cmd); // TODO: Always? not just if it's a foreground command?
-            new_cmd->setTimeout(timeout);
+            if (timeout != -1) {
+                new_cmd->setTimeout(timeout);
+            }
             return new_cmd;
         }
     }
@@ -237,8 +239,8 @@ void SmallShell::removeFromTimers(pid_t timeout_pid) {
             ++it;
         }
     }
-    if(this->timers.size() == 0){
+    if (this->timers.size() == 0) {
         // Remove pending alarm
-        alarm(0);
+//        alarm(0);
     }
 }

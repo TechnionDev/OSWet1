@@ -84,7 +84,7 @@ int parseCommandLine(const char *cmd_line, char **args) {
     FUNC_EXIT()
 }
 
-bool isBackgroundComamnd(string cmd_line) {
+bool isBackgroundCommand(const string &cmd_line) {
     string trimmed = trim(cmd_line);
     return trimmed[trimmed.length() - 1] == '&';
 }

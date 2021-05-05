@@ -74,7 +74,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
                 s_cmd_to_run = no_background_cmd;
             }
             const shared_ptr<ExternalCommand>
-                    new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundComamnd(cmd_s), cmd_s));
+                    new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundCommand(cmd_s), cmd_s));
             this->setExternalCommand(new_cmd); // TODO: Always? not just if it's a foreground command?
             if (timeout != -1) {
                 new_cmd->setTimeout(timeout);

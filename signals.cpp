@@ -41,7 +41,7 @@ void ctrlCHandler(int sig_num) {
 
 void ctrlZHandler(int sig_num) {
 
-//    SmallShell *smash = &SmallShell::getInstance();
+    //    SmallShell *smash = &SmallShell::getInstance();
 
     cout << "smash: got ctrl-Z" << endl;
     SmallShell &smash = SmallShell::getInstance();
@@ -60,21 +60,31 @@ void ctrlZHandler(int sig_num) {
 }
 
 void alarmHandler(int sig_num) {
-    cout << "smash: got an alarm" << endl;
+    cout << MSG_PREFIX << "got an alarm" << endl;
     SmallShell &smash = SmallShell::getInstance();
     shared_ptr<ExternalCommand> cmd = smash.getExternalCommand();
     time_t now = time(NULL);
     auto &timers = smash.getTimers();
     auto it = timers.begin();
+    if (it == timers.end()) {
+        return;
+    }
 
-    if (get<0>(*it) > now) {
-        alarm(get<0>(*it) - now);
-    } else {
+    if (get<0>(*it) <= now) {
         cout << SHELL_NAME << ": " << get<2>(*it) << " timed out!" << endl;
         kill(get<1>(*it), SIGKILL);
+        timers.erase(it);
     }
-    it++;
-    if(it != timers.end()){
-        alarm(get<0>(*it) - now);
+
+    if (it != timers.end()) {
+        log("Setting alarm to " << get<0>(*it) - now << " seconds from now");
+        unsigned int diff = get<0>(*it) - now;
+        // Handle race even though we're not required to
+        if (diff <= 0) {
+            alarmHandler(sig_num);
+            return;
+        }
+        // Re-arm the alarm for the next one
+        alarm(diff);
     }
 }

@@ -64,7 +64,9 @@ int main(int argc, char *argv[]) {
 
         try {
             smash.parseAndExecuteCommand(cmd_line);
-        } catch (CommandException &exp) {
+        } catch(SyscallException &exp){
+            // Do nothing
+        }catch (CommandException &exp) {
             std::cerr << exp.what() << endl;
         }
     }

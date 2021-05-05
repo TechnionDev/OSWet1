@@ -75,7 +75,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             }
             const shared_ptr<ExternalCommand>
                     new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundCommand(cmd_s), cmd_s));
-            this->setExternalCommand(new_cmd); // TODO: Maybe just fg?
+            this->setExternalCommand(new_cmd);// TODO: Maybe just fg?
             if (timeout != -1) {
                 new_cmd->setTimeout(timeout);
             }
@@ -107,6 +107,7 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
         fd_to_close.push_back(fds[1]);
 
         shared_ptr<Command> cmd1 = nullptr, cmd2 = nullptr;
+        FILE *file;
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
             case IN_RD:
@@ -125,7 +126,12 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
                 cmd2 = shared_ptr<Command>(new RedirectionCommand());
                 break;
             case OUT_RD:
-                proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "w"));
+                log("redirect output file name: " << get<2>(cmd_tuple).c_str());
+                file = fopen(get<2>(cmd_tuple).c_str(), "w");
+                if (file == NULL) {
+                    throw SyscallException("fopen failed");
+                }
+                proc2_stdout = fileno(file);
                 if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));
                 }

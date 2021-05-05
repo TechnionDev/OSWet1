@@ -19,7 +19,11 @@ void JobsList::addJob(std::shared_ptr<ExternalCommand> new_cmd, bool isStopped) 
     }
     removeFinishedJobs();
     this->max_jod_id++;
-    jobs.emplace_back(new JobEntry(new_cmd, isStopped, this->max_jod_id));
+    shared_ptr<JobEntry> res_cmd(new JobEntry(new_cmd, isStopped, this->max_jod_id));
+    if (isStopped) {
+        this->last_stopped_job = res_cmd;
+    }
+    jobs.emplace_back(res_cmd);
 }
 
 JobsList::JobsList() : max_jod_id(0), jobs() {}
@@ -125,7 +129,7 @@ void JobsList::printJobsList() {
                 to_string(it->cmd->getPid()) + " " +
                 to_string(
                     (int) difftime(time(nullptr), it->time_inserted)) + " secs" +
-                " (stopped)" << endl;
+                " (stopped)";
         } else {
             cout << "[" + to_string(it->jod_id) + "] " +
                 it->cmd->getCommand() + " : " +

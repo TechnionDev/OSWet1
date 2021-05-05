@@ -105,6 +105,7 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
         fd_to_close.push_back(fds[1]);
 
         shared_ptr<Command> cmd2 = nullptr;
+        FILE *file = NULL;
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
             case IN_RD:

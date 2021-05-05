@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
         //         cout << endl << "Right" << endl;  // key right
         //         break;
         //     case '\n':
-        //         smash.executeCommand(cmd_line.c_str());
+        //         smash.parseAndExecuteCommand(cmd_line.c_str());
         //         break;
         //     default:
         //         cmd_line += c;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         smash.getJobList().removeFinishedJobs();
 
         try {
-            smash.executeCommand(cmd_line);
+            smash.parseAndExecuteCommand(cmd_line);
         } catch (CommandException &exp) {
             std::cerr << exp.what() << endl;
         }

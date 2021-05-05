@@ -7,6 +7,7 @@
 
 #include "Commands.h"
 #include "SmallShell.h"
+#include "Utils.h"
 
 using namespace std;
 
@@ -59,21 +60,21 @@ void ctrlZHandler(int sig_num) {
 }
 
 void alarmHandler(int sig_num) {
+    cout << "smash: got an alarm" << endl;
     SmallShell &smash = SmallShell::getInstance();
     shared_ptr<ExternalCommand> cmd = smash.getExternalCommand();
     time_t now = time(NULL);
     auto &timers = smash.getTimers();
     auto it = timers.begin();
 
-    while (it != timers.end()) {
-        if (get<0>(*it) > now) {
-            alarm(get<0>(*it) - now);
-            break;
-        } else {
-            cout << "smash: got an alarm" << endl;
-            cout << SHELL_NAME << ": " << get<2>(*it) << " timed out!" << endl;
-            kill(get<1>(*it), SIGKILL);
-            it = timers.erase(it);
-        }
+    if (get<0>(*it) > now) {
+        alarm(get<0>(*it) - now);
+    } else {
+        cout << SHELL_NAME << ": " << get<2>(*it) << " timed out!" << endl;
+        kill(get<1>(*it), SIGKILL);
+    }
+    it++;
+    if(it != timers.end()){
+        alarm(get<0>(*it) - now);
     }
 }

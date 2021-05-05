@@ -15,7 +15,15 @@
 
 #include "Constants.h"
 
+// TODO: Remove debug flag
+#define _DEBUG_
+
 #define VEC_END (-1)
+#ifdef _DEBUG_
+#define log(msg) cout << msg << endl
+#else
+#define log(msg)
+#endif
 
 typedef enum {
     PIPE = 1,

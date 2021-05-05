@@ -1,14 +1,14 @@
 #include "SmallShell.h"
 
-#include <stdio.h>
+#include "Utils.h"
+#include <map>
 #include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <map>
 #include <vector>
-#include <sys/fcntl.h>
-#include "Utils.h"
 
 using namespace std;
 
@@ -25,15 +25,15 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
         {"chprompt", &constructorWrapper<ChangePromptCommand>},
-        {"showpid",  &constructorWrapper<ShowPidCommand>},
-        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
-        {"cd",       &constructorWrapper<ChangeDirCommand>},
-        {"jobs",     &constructorWrapper<JobsCommand>},
-        {"kill",     &constructorWrapper<KillCommand>},
-        {"fg",       &constructorWrapper<ForegroundCommand>},
-        {"bg",       &constructorWrapper<BackgroundCommand>},
-        {"quit",     &constructorWrapper<QuitCommand>},
-        {"cat",      &constructorWrapper<CatCommand>}
+        {"showpid", &constructorWrapper<ShowPidCommand>},
+        {"pwd", &constructorWrapper<GetCurrDirCommand>},
+        {"cd", &constructorWrapper<ChangeDirCommand>},
+        {"jobs", &constructorWrapper<JobsCommand>},
+        {"kill", &constructorWrapper<KillCommand>},
+        {"fg", &constructorWrapper<ForegroundCommand>},
+        {"bg", &constructorWrapper<BackgroundCommand>},
+        {"quit", &constructorWrapper<QuitCommand>},
+        {"cat", &constructorWrapper<CatCommand>}
         /* Add more commands here */
 };
 
@@ -75,7 +75,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             }
             const shared_ptr<ExternalCommand>
                     new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundCommand(cmd_s), cmd_s));
-            this->setExternalCommand(new_cmd); // TODO: Always? not just if it's a foreground command?
+            this->setExternalCommand(new_cmd); // TODO: Maybe just fg?
             if (timeout != -1) {
                 new_cmd->setTimeout(timeout);
             }
@@ -84,7 +84,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     }
 }
 
-void SmallShell::executeCommand(string cmd_line) {
+void SmallShell::parseAndExecuteCommand(string cmd_line) {
     auto cmd_tuple = splitPipeRedirect(cmd_line);
 
     if (get<0>(cmd_tuple) == NORMAL) {
@@ -187,6 +187,7 @@ void SmallShell::executeCommand(string cmd_line) {
             }
             exit(0);
         } else {
+            // This is the main smash process
             // We don't need those fds, only used by children
             close(fds[0]);
             close(fds[1]);
@@ -200,6 +201,7 @@ void SmallShell::executeCommand(string cmd_line) {
                                           to_string(pid2) + " " +
                                           strerror(errno));
             }
+            this->cmd = nullptr;
         }
     }
 }
@@ -238,9 +240,5 @@ void SmallShell::removeFromTimers(pid_t timeout_pid) {
             }
             ++it;
         }
-    }
-    if (this->timers.size() == 0) {
-        // Remove pending alarm
-//        alarm(0);
     }
 }

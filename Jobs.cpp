@@ -2,9 +2,9 @@
 #include <iostream>
 #include <string>
 
-#include "Jobs.h"
 #include "Constants.h"
 #include "Exceptions.h"
+#include "Jobs.h"
 
 using namespace std;
 
@@ -81,7 +81,7 @@ void JobsList::killAllJobs() {
     for (auto it = jobs.begin(); it != jobs.end(); it++) {
         kill((*it)->cmd->getPid(), SIG_KILL);
         cout << to_string((*it)->cmd->getPid()) + ": " +
-            (*it)->cmd->getCommand()
+                        (*it)->cmd->getCommand()
              << endl;
         jobs.erase(it);
     }
@@ -121,17 +121,18 @@ void JobsList::printJobsList() {
     for (auto &it : jobs) {
         if (it->is_stopped) {
             cout << "[" + to_string(it->jod_id) + "] " +
-                it->cmd->getCommand() + " : " +
-                to_string(it->cmd->getPid()) + " " +
-                to_string(
-                    (int) difftime(time(nullptr), it->time_inserted)) + " secs" +
-                " (stopped)" << endl;
+                            it->cmd->getCommand() + " : " +
+                            to_string(it->cmd->getPid()) + " " +
+                            to_string(
+                                    (int) difftime(time(nullptr), it->time_inserted)) +
+                            " secs (stopped)";
         } else {
             cout << "[" + to_string(it->jod_id) + "] " +
-                it->cmd->getCommand() + " : " +
-                to_string(it->cmd->getPid()) + " " +
-                to_string(
-                    (int) difftime(time(nullptr), it->time_inserted)) + " secs";
+                            it->cmd->getCommand() + " : " +
+                            to_string(it->cmd->getPid()) + " " +
+                            to_string(
+                                    (int) difftime(time(nullptr), it->time_inserted)) +
+                            " secs";
         }
         cout << endl;
     }
@@ -143,7 +144,7 @@ bool JobsList::isJobEntryExits(shared_ptr<ExternalCommand> parm_cmd) {
     return false;
 }
 shared_ptr<JobsList::JobEntry> JobsList::getJobEntryExits(std::shared_ptr<ExternalCommand> parm_cmd) {
-    for (auto &it :jobs) {
+    for (auto &it : jobs) {
         if (it->cmd == parm_cmd) {
             return it;
         }

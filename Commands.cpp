@@ -125,9 +125,6 @@ KillCommand::KillCommand(vector<string> &argv) {
         }
         sig_num = stoi(argv[0].substr(1));
         jod_id = stoi(argv[1]);
-        if (sig_num <= 0 || jod_id <= 0) {
-            throw MissingRequiredArgumentsException("kill: invalid arguments");
-        }
     } catch (exception &exp) {
         throw MissingRequiredArgumentsException("kill: invalid arguments");
     }

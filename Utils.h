@@ -25,6 +25,13 @@
 #define log(msg)
 #endif
 
+#define syscall(call, command) do {     \
+    if((command) == NULL){                \
+        throw SyscallException(#call "failed");  \
+    }                                   \
+} while(0)
+
+
 typedef enum {
     PIPE = 1,
     PIPE_ERR = 2,

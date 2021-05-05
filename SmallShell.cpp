@@ -25,22 +25,21 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
         {"chprompt", &constructorWrapper<ChangePromptCommand>},
-        {"showpid", &constructorWrapper<ShowPidCommand>},
-        {"pwd", &constructorWrapper<GetCurrDirCommand>},
-        {"cd", &constructorWrapper<ChangeDirCommand>},
-        {"jobs", &constructorWrapper<JobsCommand>},
-        {"kill", &constructorWrapper<KillCommand>},
-        {"fg", &constructorWrapper<ForegroundCommand>},
-        {"bg", &constructorWrapper<BackgroundCommand>},
-        {"quit", &constructorWrapper<QuitCommand>},
-        {"cat", &constructorWrapper<CatCommand>}
+        {"showpid",  &constructorWrapper<ShowPidCommand>},
+        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
+        {"cd",       &constructorWrapper<ChangeDirCommand>},
+        {"jobs",     &constructorWrapper<JobsCommand>},
+        {"kill",     &constructorWrapper<KillCommand>},
+        {"fg",       &constructorWrapper<ForegroundCommand>},
+        {"bg",       &constructorWrapper<BackgroundCommand>},
+        {"quit",     &constructorWrapper<QuitCommand>},
+        {"cat",      &constructorWrapper<CatCommand>}
         /* Add more commands here */
 };
 
 SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
 
 SmallShell::~SmallShell() {
-    // TODO: add your implementation
 }
 
 /**
@@ -75,7 +74,8 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             }
             const shared_ptr<ExternalCommand>
                     new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundCommand(cmd_s), cmd_s));
-            this->setExternalCommand(new_cmd);// TODO: Maybe just fg?
+            // If background, it will be unset right after execute
+            this->setExternalCommand(new_cmd);
             if (timeout != -1) {
                 new_cmd->setTimeout(timeout);
             }
@@ -89,8 +89,6 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
 
     if (get<0>(cmd_tuple) == NORMAL) {
         shared_ptr<Command> cmd_ptr = createCommand(cmd_line);
-        // TODO: Handle external isBackground (maybe handle9 in execute for prettier
-        // handling)
         cmd_ptr->execute();
         this->cmd = nullptr;
     } else {
@@ -110,14 +108,16 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
             case IN_RD:
-                proc1_stdin = fileno(fopen(get<2>(cmd_tuple).c_str(), "r"));
+                syscall(fopen, file = fopen(get<2>(cmd_tuple).c_str(), "r"));
+                proc1_stdin = fileno(file);
                 if (proc1_stdin < 0) {
                     throw SyscallException(strerror(errno));
                 }
                 cmd2 = shared_ptr<Command>(new NopCommand());
                 break;
             case OUT_RD_APPEND:
-                proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "a"));
+                syscall(fopen, file = fopen(get<2>(cmd_tuple).c_str(), "a"));
+                proc2_stdout = fileno(file);
                 if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));
                 }
@@ -125,11 +125,7 @@ void SmallShell::parseAndExecuteCommand(string cmd_line) {
                 cmd2 = shared_ptr<Command>(new RedirectionCommand());
                 break;
             case OUT_RD:
-                log("redirect output file name: " << get<2>(cmd_tuple).c_str());
-                file = fopen(get<2>(cmd_tuple).c_str(), "w");
-                if (file == NULL) {
-                    throw SyscallException("fopen failed");
-                }
+                syscall(fopen, file = fopen(get<2>(cmd_tuple).c_str(), "w"));
                 proc2_stdout = fileno(file);
                 if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));

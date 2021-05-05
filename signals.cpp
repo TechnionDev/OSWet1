@@ -76,7 +76,8 @@ void alarmHandler(int sig_num) {
         timers.erase(it);
     }
 
-    if (it != timers.end()) {
+    if ((it = timers.begin()) != timers.end()) {
+        log("timers size after handler " << timers.size());
         log("Setting alarm to " << get<0>(*it) - now << " seconds from now");
         unsigned int diff = get<0>(*it) - now;
         // Handle race even though we're not required to

@@ -34,7 +34,7 @@ std::string trim(const std::string &s);
 
 int parseCommandLine(const char *cmd_line, char **args);
 
-bool isBackgroundComamnd(std::string cmd_line);
+bool isBackgroundCommand(const std::string &cmd_line);
 
 std::string removeBackgroundSign(std::string cmd_line);
 

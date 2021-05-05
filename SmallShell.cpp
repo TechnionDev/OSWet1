@@ -106,7 +106,7 @@ void SmallShell::executeCommand(string cmd_line) {
         fd_to_close.push_back(fds[0]);
         fd_to_close.push_back(fds[1]);
 
-        shared_ptr<Command> cmd1 = nullptr, cmd2 = nullptr;
+        shared_ptr<Command> cmd2 = nullptr;
         // Switch on the type of command
         switch (get<0>(cmd_tuple)) {
             case IN_RD:
@@ -143,11 +143,6 @@ void SmallShell::executeCommand(string cmd_line) {
                                           "The if before the switch makes sure of that.");
         }
 
-        cmd1 = this->createCommand(get<1>(cmd_tuple));
-        if (cmd2 == nullptr) {
-            cmd2 = this->createCommand(get<2>(cmd_tuple));
-        }
-
         // Run first command
         if ((pid1 = fork()) == 0) {
             // Child
@@ -163,6 +158,7 @@ void SmallShell::executeCommand(string cmd_line) {
             close(fds[0]);
             close(fds[1]);
             try {
+                auto cmd1 = this->createCommand(get<1>(cmd_tuple));
                 cmd1->execute();
             } catch (CommandException &exp) {
                 cerr << exp.what() << endl;
@@ -180,6 +176,9 @@ void SmallShell::executeCommand(string cmd_line) {
             close(fds[0]);
             close(fds[1]);
             try {
+                if (cmd2 == nullptr) {
+                    cmd2 = this->createCommand(get<2>(cmd_tuple));
+                }
                 cmd2->execute();
             } catch (CommandException &exp) {
                 cerr << exp.what() << endl;
@@ -200,6 +199,7 @@ void SmallShell::executeCommand(string cmd_line) {
                                           to_string(pid2) + " " +
                                           strerror(errno));
             }
+            this->cmd = nullptr;
         }
     }
 }

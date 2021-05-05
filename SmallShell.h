@@ -40,7 +40,7 @@ public:
 
     ~SmallShell();
 
-    void executeCommand(std::string cmd_line);
+    void parseAndExecuteCommand(std::string cmd_line);
 
     std::shared_ptr<ExternalCommand> getExternalCommand() { return cmd; }
 

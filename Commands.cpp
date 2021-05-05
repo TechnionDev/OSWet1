@@ -135,8 +135,9 @@ KillCommand::KillCommand(vector<string> &argv) {
 
 void KillCommand::execute() {
     pid_t res_pid;
+    SmallShell &smash = SmallShell::getInstance();
     try {
-        res_pid = SmallShell::getInstance().getJobList().getJobById(jod_id)->cmd->getPid();
+        res_pid = smash.getJobList().getJobById(jod_id)->cmd->getPid();
     } catch (ItemDoesNotExist &exp) {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
@@ -146,7 +147,7 @@ void KillCommand::execute() {
         throw CommandException(string("kill failed: ") + strerror(errno));
     }
     cout << "signal number " + to_string(sig_num) + " was sent to pid " + to_string(res_pid) << endl;
-    SmallShell::getInstance().getJobList().removeFinishedJobs();
+    smash.getJobList().removeFinishedJobs();
 }
 
 QuitCommand::QuitCommand(vector<std::string> &argv) : kill_all((not argv.empty()) and argv[0] == "kill") {}

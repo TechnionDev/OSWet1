@@ -25,15 +25,15 @@ shared_ptr<Command> constructorWrapper(vector<string> argv) {
 
 static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
         {"chprompt", &constructorWrapper<ChangePromptCommand>},
-        {"showpid",  &constructorWrapper<ShowPidCommand>},
-        {"pwd",      &constructorWrapper<GetCurrDirCommand>},
-        {"cd",       &constructorWrapper<ChangeDirCommand>},
-        {"jobs",     &constructorWrapper<JobsCommand>},
-        {"kill",     &constructorWrapper<KillCommand>},
-        {"fg",       &constructorWrapper<ForegroundCommand>},
-        {"bg",       &constructorWrapper<BackgroundCommand>},
-        {"quit",     &constructorWrapper<QuitCommand>},
-        {"cat",      &constructorWrapper<CatCommand>}
+        {"showpid", &constructorWrapper<ShowPidCommand>},
+        {"pwd", &constructorWrapper<GetCurrDirCommand>},
+        {"cd", &constructorWrapper<ChangeDirCommand>},
+        {"jobs", &constructorWrapper<JobsCommand>},
+        {"kill", &constructorWrapper<KillCommand>},
+        {"fg", &constructorWrapper<ForegroundCommand>},
+        {"bg", &constructorWrapper<BackgroundCommand>},
+        {"quit", &constructorWrapper<QuitCommand>},
+        {"cat", &constructorWrapper<CatCommand>}
         /* Add more commands here */
 };
 
@@ -75,7 +75,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
             }
             const shared_ptr<ExternalCommand>
                     new_cmd(new ExternalCommand(s_cmd_to_run, isBackgroundCommand(cmd_s), cmd_s));
-            this->setExternalCommand(new_cmd); // TODO: Always? not just if it's a foreground command?
+            this->setExternalCommand(new_cmd);// TODO: Maybe just fg?
             if (timeout != -1) {
                 new_cmd->setTimeout(timeout);
             }
@@ -84,7 +84,7 @@ shared_ptr<Command> SmallShell::createCommand(string cmd_s) {
     }
 }
 
-void SmallShell::executeCommand(string cmd_line) {
+void SmallShell::parseAndExecuteCommand(string cmd_line) {
     auto cmd_tuple = splitPipeRedirect(cmd_line);
 
     if (get<0>(cmd_tuple) == NORMAL) {
@@ -125,7 +125,12 @@ void SmallShell::executeCommand(string cmd_line) {
                 cmd2 = shared_ptr<Command>(new RedirectionCommand());
                 break;
             case OUT_RD:
-                proc2_stdout = fileno(fopen(get<2>(cmd_tuple).c_str(), "w"));
+                log("redirect output file name: " << get<2>(cmd_tuple).c_str());
+                file = fopen(get<2>(cmd_tuple).c_str(), "w");
+                if (file == NULL) {
+                    throw SyscallException("fopen failed");
+                }
+                proc2_stdout = fileno(file);
                 if (proc2_stdout < 0) {
                     throw SyscallException(strerror(errno));
                 }
@@ -186,6 +191,7 @@ void SmallShell::executeCommand(string cmd_line) {
             }
             exit(0);
         } else {
+            // This is the main smash process
             // We don't need those fds, only used by children
             close(fds[0]);
             close(fds[1]);
@@ -238,9 +244,5 @@ void SmallShell::removeFromTimers(pid_t timeout_pid) {
             }
             ++it;
         }
-    }
-    if (this->timers.size() == 0) {
-        // Remove pending alarm
-//        alarm(0);
     }
 }

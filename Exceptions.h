@@ -3,15 +3,15 @@
 #include <iostream>
 #define EXCEPTION(name)                                  \
     class name : public CommandException {               \
-       public:                                           \
+    public:                                              \
         name(std::string str) : CommandException(str){}; \
     }
 
 class CommandException : public std::runtime_error {
-   public:
+public:
     CommandException(std::string str) : std::runtime_error(ERR_PREFIX + str){};
 };
-#define ERROR_M(name) std::cout<<name<<endl;
+#define ERROR_M(name) std::cout << name << endl;
 EXCEPTION(CommandNotFoundException);
 EXCEPTION(MissingRequiredArgumentsException);
 EXCEPTION(TooManyArgumentsException);
@@ -22,8 +22,15 @@ EXCEPTION(AlreadyRunningInBackGround);
 EXCEPTION(FailedToWaitOnChild);
 EXCEPTION(FailedToResumeChild);
 EXCEPTION(NoJobProvided);
-EXCEPTION(SyscallException);
 EXCEPTION(ImpossibleException);
 EXCEPTION(TimeoutInvalidArguments);
 
-#endif  // OSWET1__EXCEPTIONS_H_
+class SyscallException : public CommandException {
+public:
+    SyscallException(std::string str) : CommandException("") {
+        perror((ERR_PREFIX_NOSPACE + str).c_str());
+    }
+};
+
+
+#endif// OSWET1__EXCEPTIONS_H_

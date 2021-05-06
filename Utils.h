@@ -15,7 +15,22 @@
 
 #include "Constants.h"
 
+// TODO: Remove debug flag
+#define _DEBUG_
+
 #define VEC_END (-1)
+#ifdef _DEBUG_
+#define log(msg) cout << msg << endl
+#else
+#define log(msg)
+#endif
+
+#define syscall(call, command) do {     \
+    if((command) == NULL){                \
+        throw SyscallException(#call "failed");  \
+    }                                   \
+} while(0)
+
 
 typedef enum {
     PIPE = 1,
@@ -34,7 +49,7 @@ std::string trim(const std::string &s);
 
 int parseCommandLine(const char *cmd_line, char **args);
 
-bool isBackgroundComamnd(std::string cmd_line);
+bool isBackgroundCommand(const std::string &cmd_line);
 
 std::string removeBackgroundSign(std::string cmd_line);
 

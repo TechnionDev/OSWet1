@@ -10,7 +10,7 @@
 // String constants
 #define BASH_PATH "/bin/bash"
 #define SHELL_NAME "smash"
-// #define ERR_PREFIX SHELL_NAME ": "
+#define MSG_PREFIX SHELL_NAME ": "
 #define ERR_PREFIX_NOSPACE SHELL_NAME " error:"
 #define ERR_PREFIX ERR_PREFIX_NOSPACE " "
 #define PROMPT_SIGN "> "

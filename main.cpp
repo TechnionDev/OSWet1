@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "SmallShell.h"
-#include "signals.h"
+#include "Signals.h"
 
 using std::cin;
 using std::cout;
@@ -21,39 +21,31 @@ int main(int argc, char *argv[]) {
         perror(ERR_PREFIX "failed to set ctrl-C handler");
     }
 
+    { // Alarm handler
+        struct sigaction sig_act;
+        sig_act.sa_handler = alarmHandler;
+        sig_act.sa_flags = SA_RESTART;
+        sigemptyset(&sig_act.sa_mask);
+
+        if (sigaction(SIGALRM, &sig_act, NULL)) {
+            perror(ERR_PREFIX "failed to set alarm handler");
+        }
+    }
+
     // TODO: setup sig alarm handler
 
     SmallShell &smash = SmallShell::getInstance();
-    string cmd_line = "";
-    int c;
+    string cmd_line;
     while (true) {
         cout << smash.getPrompt() << flush;
-        // switch ((c = getch())) {
-        //     case KEY_UP:
-        //         cout << endl << "Up" << endl;  // key up
-        //         break;
-        //     case KEY_DOWN:
-        //         cout << endl << "Down" << endl;  // key down
-        //         break;
-        //     case KEY_LEFT:
-        //         cout << endl << "Left" << endl;  // key left
-        //         break;
-        //     case KEY_RIGHT:
-        //         cout << endl << "Right" << endl;  // key right
-        //         break;
-        //     case '\n':
-        //         smash.executeCommand(cmd_line.c_str());
-        //         break;
-        //     default:
-        //         cmd_line += c;
-        //         break;
-        // }
         getline(cin, cmd_line);
         smash.getJobList().removeFinishedJobs();
 
         try {
-            smash.executeCommand(cmd_line);
-        } catch (CommandException &exp) {
+            smash.parseAndExecuteCommand(cmd_line);
+        } catch(SyscallException &exp){
+            // Do nothing
+        }catch (CommandException &exp) {
             std::cerr << exp.what() << endl;
         }
     }

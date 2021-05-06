@@ -201,6 +201,7 @@ void ExternalCommand::execute() {
             }
             if (this->timeout != -1) {
                 smash.removeFromTimers(pid);
+
             }
         }
     }

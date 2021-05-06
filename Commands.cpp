@@ -102,7 +102,7 @@ void ChangeDirCommand::execute() {
 ShowPidCommand::ShowPidCommand(vector<std::string> &argv) {}
 
 void ShowPidCommand::execute() {
-    cout << "smash pid is " + to_string(getpid()) << endl;
+    cout << "smash pid is " + to_string(SmallShell::getInstance().getShellPid()) << endl;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(vector<std::string> &argv) {}
@@ -163,7 +163,7 @@ ExternalCommand::ExternalCommand(
         const string &command,
         bool isBackground,
         const string &command_with_background)
-        : pid(0), command(command), isBackground(isBackground), command_with_background(command_with_background) {
+        : pid(0), command(command), command_with_background(command_with_background), isBackground(isBackground) {
     if (command.empty()) {
         throw CommandNotFoundException("No command specified");
     }

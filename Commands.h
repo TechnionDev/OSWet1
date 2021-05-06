@@ -89,7 +89,6 @@ class GetCurrDirCommand : public BuiltInCommand {
 
 class ShowPidCommand : public BuiltInCommand {
  private:
-  int pwd{};
 
  public:
   ShowPidCommand(std::vector<std::string> &argv);

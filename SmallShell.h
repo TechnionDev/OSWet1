@@ -7,6 +7,7 @@
 
 class SmallShell {
 private:
+    pid_t pid;
     std::string prompt;
     std::string last_dir;
     // Pairs of end-time and the pid of the process
@@ -17,6 +18,7 @@ private:
     JobsList smash_job_list;
     std::shared_ptr<ExternalCommand> cmd = nullptr;
 public:
+    pid_t getShellPid();
     std::shared_ptr<Command> createCommand(std::string cmd_line);
 
     SmallShell(SmallShell const &) = delete;      // disable copy ctor

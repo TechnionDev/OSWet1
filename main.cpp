@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "SmallShell.h"
-#include "signals.h"
+#include "Signals.h"
 
 using std::cin;
 using std::cout;
@@ -35,30 +35,9 @@ int main(int argc, char *argv[]) {
     // TODO: setup sig alarm handler
 
     SmallShell &smash = SmallShell::getInstance();
-    string cmd_line = "";
-    int c;
+    string cmd_line;
     while (true) {
         cout << smash.getPrompt() << flush;
-        // switch ((c = getch())) {
-        //     case KEY_UP:
-        //         cout << endl << "Up" << endl;  // key up
-        //         break;
-        //     case KEY_DOWN:
-        //         cout << endl << "Down" << endl;  // key down
-        //         break;
-        //     case KEY_LEFT:
-        //         cout << endl << "Left" << endl;  // key left
-        //         break;
-        //     case KEY_RIGHT:
-        //         cout << endl << "Right" << endl;  // key right
-        //         break;
-        //     case '\n':
-        //         smash.parseAndExecuteCommand(cmd_line.c_str());
-        //         break;
-        //     default:
-        //         cmd_line += c;
-        //         break;
-        // }
         getline(cin, cmd_line);
         smash.getJobList().removeFinishedJobs();
 

@@ -37,7 +37,11 @@ static const map<string, CommandCtorWrapperFuncPtr> commandsCtors = {
         /* Add more commands here */
 };
 
-SmallShell::SmallShell() : prompt(SHELL_NAME), smash_job_list() {}
+SmallShell::SmallShell() : pid(getpid()), prompt(SHELL_NAME), smash_job_list() {}
+
+pid_t SmallShell::getShellPid() {
+    return this->pid;
+}
 
 SmallShell::~SmallShell() {
 }

@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     { // Alarm handler
-        struct sigaction sig_act = {0};
+        struct sigaction sig_act;
         sig_act.sa_handler = alarmHandler;
         sig_act.sa_flags = SA_RESTART;
         sigemptyset(&sig_act.sa_mask);

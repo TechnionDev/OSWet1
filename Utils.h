@@ -27,7 +27,7 @@
 
 #define syscall(call, command) do {     \
     if((command) == NULL){                \
-        throw SyscallException(#call "failed");  \
+        throw SyscallException(#call " failed");  \
     }                                   \
 } while(0)
 

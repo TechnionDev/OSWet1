@@ -1,10 +1,10 @@
 #TODO: replace ID with your own IDS, for example: 123456789_123456789
-SUBMITTERS := <student1-ID>_<student2-ID>
+SUBMITTERS := 206631848_206560856
 COMPILER := g++
 COMPILER_FLAGS := --std=c++11 -Wall
 SRCS := Commands.cpp Signals.cpp SmallShell.cpp main.cpp Utils.cpp Jobs.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
-HDRS := Commands.h Signals.h Jobs.h SmallShell.h Utils.h
+HDRS := Commands.h Signals.h Jobs.h SmallShell.h Utils.h Constants.h Exceptions.h
 TESTS_INPUTS := $(wildcard test_input*.txt)
 TESTS_OUTPUTS := $(subst input,output,$(TESTS_INPUTS))
 SMASH_BIN := smash

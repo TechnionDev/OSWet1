@@ -1,8 +1,10 @@
 #include "Commands.h"
 
+#include <linux/limits.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <string.h>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -59,7 +61,7 @@ void CatCommand::execute() {
 
 std::string getPwd() {
     char pwd[PATH_MAX];
-    return string(getwd(pwd));
+    return string(getcwd(pwd, PATH_MAX));
 }
 
 ChangeDirCommand::ChangeDirCommand(vector<string> &argv) {
@@ -201,7 +203,6 @@ void ExternalCommand::execute() {
             }
             if (this->timeout != -1) {
                 smash.removeFromTimers(pid);
-
             }
         }
     }
@@ -320,7 +321,7 @@ void BackgroundCommand::execute() {
         string prompt = ERR_PREFIX;
         string error_message = string(exp.what());
         throw ItemDoesNotExist(
-                "bg:" +
+                "bg: " +
                 error_message.substr(prompt.length(), error_message.length()));
     } catch (exception &exp) {
         throw exp;

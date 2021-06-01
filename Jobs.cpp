@@ -1,3 +1,5 @@
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <csignal>
 #include <iostream>
 #include <string>
@@ -34,7 +36,7 @@ shared_ptr<JobsList::JobEntry> JobsList::getJobById(int job_id) {
             return it;
         }
     }
-    throw ItemDoesNotExist(" job-id " + to_string(job_id) + " does not exist");
+    throw ItemDoesNotExist("job-id " + to_string(job_id) + " does not exist");
 }
 
 void JobsList::setForegroundJob(int job_id) {
@@ -67,9 +69,12 @@ shared_ptr<JobsList::JobEntry> JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     jobs.sort(rcompare);
-    for (auto it = jobs.begin(); it != jobs.end(); it++) {
+    auto it = jobs.begin();
+    while (it != jobs.end()) {
         if (waitpid((*it)->cmd->getPid(), nullptr, WNOHANG) != 0) {
-            jobs.erase(it);
+            it = jobs.erase(it);
+        } else {
+            it++;
         }
     }
     // set current max_job_id
@@ -82,12 +87,12 @@ void JobsList::removeFinishedJobs() {
 }
 
 void JobsList::killAllJobs() {
-    for (auto it = jobs.begin(); it != jobs.end(); it++) {
+    for (auto it = jobs.begin(); it != jobs.end();) {
         kill((*it)->cmd->getPid(), SIG_KILL);
         cout << to_string((*it)->cmd->getPid()) + ": " +
                         (*it)->cmd->getCommand()
              << endl;
-        jobs.erase(it);
+        it = jobs.erase(it);
     }
     max_jod_id = 0;
 }

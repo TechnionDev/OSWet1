@@ -3,6 +3,7 @@
 
 #include <sys/stat.h>
 #include <wordexp.h>
+#include <string.h>
 
 #if 0
 #define FUNC_ENTRY() cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -50,7 +51,7 @@ vector<string> split(const string &str) {
     wordexp_t we;
     wordexp(str.c_str(), &we, 0);
     vector<string> argv(we.we_wordc);//TODO:: when the string "jobs.sort(compare);" is entered we receive bad-malloc.
-    for (int i = 0; i < we.we_wordc; i++) {
+    for (unsigned int i = 0; i < we.we_wordc; i++) {
         argv[i] = string(we.we_wordv[i]);
     }
 
